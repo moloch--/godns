@@ -23,7 +23,6 @@ import (
 	"io"
 	"log/slog"
 	insecureRand "math/rand"
-	"net"
 	"regexp"
 	"sort"
 	"strings"
@@ -194,6 +193,9 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 	case dns.TypeA:
 		g.Log.Info(fmt.Sprintf("Spoofing A record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofA(rule, req)
+	case dns.TypeNS:
+		g.Log.Info(fmt.Sprintf("Spoofing NS record for %s to %s", req.Question[0].Name, rule.Spoof))
+		return g.spoofNS(rule, req)
 	case dns.TypeAAAA:
 		g.Log.Info(fmt.Sprintf("Spoofing AAAA record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofAAAA(rule, req)
@@ -231,67 +233,6 @@ func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
 		}
 	}
 	return nil, false
-}
-
-func (g *GodNS) spoofA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
-	return &dns.Msg{
-		MsgHdr: dns.MsgHdr{
-			Id:                 req.Id,
-			Response:           true,
-			Opcode:             req.Opcode,
-			Authoritative:      true,
-			Truncated:          req.Truncated,
-			RecursionDesired:   req.RecursionDesired,
-			RecursionAvailable: req.RecursionAvailable,
-			AuthenticatedData:  req.AuthenticatedData,
-			CheckingDisabled:   req.CheckingDisabled,
-			Rcode:              dns.RcodeSuccess,
-		},
-		Compress: req.Compress,
-		Question: req.Question,
-		Answer: []dns.RR{
-			&dns.A{
-				Hdr: dns.RR_Header{
-					Name:   req.Question[0].Name,
-					Rrtype: dns.TypeA,
-					Class:  dns.ClassINET,
-					Ttl:    0,
-				},
-				A: net.ParseIP(rule.Spoof).To4(),
-			},
-		},
-	}
-}
-
-func (g *GodNS) spoofAAAA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
-	return &dns.Msg{
-		MsgHdr: dns.MsgHdr{
-			Id:                 req.Id,
-			Response:           true,
-			Opcode:             req.Opcode,
-			Authoritative:      true,
-			Truncated:          req.Truncated,
-			RecursionDesired:   req.RecursionDesired,
-			RecursionAvailable: req.RecursionAvailable,
-			AuthenticatedData:  req.AuthenticatedData,
-			CheckingDisabled:   req.CheckingDisabled,
-			Rcode:              dns.RcodeSuccess,
-		},
-		Compress: req.Compress,
-		Question: req.Question,
-		Answer: []dns.RR{
-			&dns.AAAA{
-				Hdr: dns.RR_Header{
-					Name:   req.Question[0].Name,
-					Rrtype: dns.TypeAAAA,
-					Class:  dns.ClassINET,
-					Ttl:    0,
-				},
-				AAAA: net.ParseIP(rule.Spoof).To16(),
-			},
-		},
-	}
-
 }
 
 type GodNSConfig struct {

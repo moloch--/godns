@@ -32,9 +32,11 @@ import (
 )
 
 const (
-	aRule  = "a-rule"    // A rule
-	qRule  = "aaaa-rule" // Quad A rule
-	mxRule = "mx-rule"   // MX rule
+	aRule   = "rule-a"    // A rule
+	qRule   = "rule-aaaa" // Quad A rule
+	mxRule  = "rule-mx"   // MX rule
+	nsRule  = "rule-ns"   // NS rule
+	txtRule = "rule-txt"  // TXT rule
 )
 
 func init() {
@@ -48,7 +50,7 @@ func init() {
 
 	// Logging Flags
 	rootCmd.Flags().StringP("log-level", "l", "info", "Log level (debug/info/warn/error)")
-	rootCmd.Flags().BoolP("log-pretty", "t", true, "Log using pretty terminal colors")
+	rootCmd.Flags().BoolP("log-pretty", "y", true, "Log using pretty terminal colors")
 
 	// Upstream Flags
 	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server (host only)")
@@ -58,9 +60,13 @@ func init() {
 	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
 
 	// Rule Flags
-	rootCmd.Flags().StringSliceP(aRule, "A", []string{}, "Replacement rule for A records (match|spoof)")
-	rootCmd.Flags().StringSliceP(qRule, "Q", []string{}, "Replacement rule for AAAA records (match|spoof)")
+	rootCmd.Flags().StringSliceP(aRule, "a", []string{}, "Replacement rule for A records (match|spoof)")
+	rootCmd.Flags().StringSliceP(qRule, "q", []string{}, "Replacement rule for AAAA records (match|spoof)")
+	rootCmd.Flags().StringSliceP(mxRule, "m", []string{}, "Replacement rule for MX records (match|spoof)")
+	rootCmd.Flags().StringSliceP(nsRule, "n", []string{}, "Replacement rule for NS records (match|spoof)")
+	rootCmd.Flags().StringSliceP(txtRule, "t", []string{}, "Replacement rule for TXT records (match|spoof)")
 
+	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(licenseCmd)
 	rootCmd.AddCommand(versionCmd)
 }
@@ -74,12 +80,12 @@ and can be used to direct traffic to a different host.
 Basic rules can be passed via the command line, basic rules simply match a domain name and record type
 and spoof the response using the provided value. For example, to spoof all A records for various domains:
 	
-	godns --a-rule "microsoft.com|127.0.0.1" --a-rule "google.com|127.0.0.1"
+	godns --rule-a "microsoft.com|127.0.0.1" --rule-a "google.com|127.0.0.1"
 
 The command line also allows a global wild card match '*' to match all domains. For example, to spoof
 all A records for all domains:
 
-	godns --a-rule "*|127.0.0.1"
+	godns --rule-a "*|127.0.0.1"
 
 For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that
 contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type
@@ -101,6 +107,9 @@ var rootCmd = &cobra.Command{
 		// Parse rule flags, if any
 		allRules := map[string][]*godns.ReplacementRule{}
 		allRules["A"] = parseARules(cmd)
+		allRules["NS"] = parseRulesFlag(cmd, nsRule)
+		allRules["MX"] = parseRulesFlag(cmd, mxRule)
+		allRules["TXT"] = parseRulesFlag(cmd, txtRule)
 		allRules["AAAA"] = parseRulesFlag(cmd, qRule)
 
 		countRules := 0

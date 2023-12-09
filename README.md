@@ -10,14 +10,14 @@ Basic rules can be passed via the command line, basic rules simply match a domai
 and spoof the response using the provided value. For example, to spoof all `A` records for various domains:
 
 ```bash
-godns --a-rule "microsoft.com|127.0.0.1" --a-rule "google.com|127.0.0.1"
+godns --rule-a "microsoft.com|127.0.0.1" --rule-a "google.com|127.0.0.1"
 ```
 
 One special case is allowed for the command line, if the value is set to `*` then all records are spoofed for
 associated record type. For example, to spoof all `A` and `AAAA` records for all domains:
 
 ```bash
-godns --a-rule "*|127.0.0.1" --aaaa-rule "*|::1"
+godns --rule-a "*|127.0.0.1" --rule-aaaa "*|::1"
 ```
 
 ### Advanced Usage
