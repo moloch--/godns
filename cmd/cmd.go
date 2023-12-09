@@ -53,8 +53,8 @@ func init() {
 	rootCmd.Flags().BoolP("log-pretty", "y", true, "Log using pretty terminal colors")
 
 	// Upstream Flags
-	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server (host only)")
-	rootCmd.Flags().Uint16P("upstream-port", "p", 53, "Upstream DNS server port (applied to all hosts)")
+	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server hosts")
+	rootCmd.Flags().Uint16P("upstream-port", "p", 53, "Upstream server port, applied to all upstream hosts")
 
 	// Config Flag
 	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
