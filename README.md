@@ -1,6 +1,6 @@
 # GodNS
 
-A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts, inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host or port, or to a completely different domain.
+A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts, inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host.
 
 ### Support Platforms
 

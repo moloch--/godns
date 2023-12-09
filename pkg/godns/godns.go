@@ -23,6 +23,9 @@ import (
 	"io"
 	"log/slog"
 	insecureRand "math/rand"
+	"net"
+	"regexp"
+	"sync"
 	"time"
 
 	"github.com/miekg/dns"
@@ -55,6 +58,15 @@ var (
 	}
 )
 
+type ReplacementRule struct {
+	Priority int    `json:"priority" yaml:"priority"`
+	Match    string `json:"match" yaml:"match"`
+	Spoof    string `json:"spoof" yaml:"spoof"`
+
+	// Compiled regex
+	matchRegex *regexp.Regexp `json:"-" yaml:"-"`
+}
+
 type GodNS struct {
 	server       *dns.Server
 	serverConfig *GodNSConfig
@@ -62,7 +74,8 @@ type GodNS struct {
 	client       *dns.Client
 	clientConfig *dns.ClientConfig
 
-	Log *slog.Logger
+	Rules []*ReplacementRule
+	Log   *slog.Logger
 }
 
 // Start - Start the GodNS server
@@ -88,15 +101,50 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	}
 
 	// Proxy the request to the upstream resolver
+	var upstream string
 	upstreamHost := g.clientConfig.Servers[insecureRand.Intn(len(g.clientConfig.Servers))]
-	upstream := fmt.Sprintf("%s:%s", upstreamHost, g.clientConfig.Port)
-	resp, rtt, err := g.client.Exchange(req, upstream)
-	if err != nil {
+	upstream = fmt.Sprintf("%s:%s", upstreamHost, g.clientConfig.Port)
+
+	wg := sync.WaitGroup{}
+
+	var upstreamMsg *dns.Msg
+	var upstreamRtt time.Duration
+	var upstreamErr error
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		upstreamMsg, upstreamRtt, upstreamErr = g.client.Exchange(req, upstream)
+	}()
+
+	var replaceMsg *dns.Msg
+	wg.Add(1)
+	go func(msg *dns.Msg) {
+		defer wg.Done()
+		replaceMsg = g.replacement(msg)
+		if replaceMsg != nil {
+			wg.Done() // Short circuit the upstream goroutine
+		}
+	}(req)
+
+	wg.Wait()
+
+	var resp *dns.Msg
+	var rtt time.Duration
+	if replaceMsg != nil {
+		resp = replaceMsg
+		rtt = 0
+	} else {
+		resp = upstreamMsg
+		rtt = upstreamRtt
+	}
+
+	if resp == nil && upstreamErr != nil {
 		msg.SetRcode(req, dns.RcodeServerFailure)
 		writer.WriteMsg(msg)
 		return
 	}
-	err = writer.WriteMsg(resp)
+
+	err := writer.WriteMsg(resp)
 	if err != nil {
 		g.Log.Error(fmt.Sprintf("Error writing response: %s", err.Error()))
 		return
@@ -110,9 +158,56 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	}
 }
 
+func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
+	if !g.matchReplacement(req) {
+		return nil
+	}
+
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           true,
+			Opcode:             req.Opcode,
+			Authoritative:      true,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: req.RecursionAvailable,
+			AuthenticatedData:  req.AuthenticatedData,
+			CheckingDisabled:   req.CheckingDisabled,
+			Rcode:              dns.RcodeSuccess,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+		Answer: []dns.RR{
+			&dns.A{
+				Hdr: dns.RR_Header{
+					Name:   req.Question[0].Name,
+					Rrtype: dns.TypeA,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				A: net.ParseIP(g.Rules[0].Spoof).To4(),
+			},
+		},
+	}
+}
+
+func (g *GodNS) matchReplacement(req *dns.Msg) bool {
+	for _, rule := range g.Rules {
+		if rule.matchRegex == nil {
+			continue
+		}
+		if rule.matchRegex.MatchString(req.Question[0].Name) {
+			return true
+		}
+	}
+	return false
+}
+
 type GodNSConfig struct {
-	Server *ServerConfig `json:"server" yaml:"server"`
-	Client *ClientConfig `json:"client" yaml:"client"`
+	Server *ServerConfig      `json:"server" yaml:"server"`
+	Client *ClientConfig      `json:"client" yaml:"client"`
+	Rules  []*ReplacementRule `json:"rules" yaml:"rules"`
 }
 
 type ServerConfig struct {

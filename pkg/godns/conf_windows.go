@@ -34,10 +34,6 @@ import (
 	"strings"
 	"unsafe"
 
-	// {{if .Config.Debug}}
-	"log"
-	// {{end}}
-
 	"github.com/miekg/dns"
 	"golang.org/x/sys/windows"
 )
@@ -72,9 +68,6 @@ func DNSClientConfig() (*dns.ClientConfig, error) {
 					if ip.To16() != nil && strings.HasPrefix(ip.To16().String(), "fec0:") {
 						continue
 					}
-					// {{if .Config.Debug}}
-					log.Printf("Possible resolver: %v", ip)
-					// {{end}}
 					resolvers[ip.String()] = true
 				}
 				break
