@@ -34,7 +34,33 @@ import (
 )
 
 var (
-	dnsQueryType = map[uint16]string{
+	// DNSQueryType - Map of replaceable DNS query types
+	StringToQueryType = map[string]uint16{
+		"A":          dns.TypeA,
+		"NS":         dns.TypeNS,
+		"CNAME":      dns.TypeCNAME,
+		"SOA":        dns.TypeSOA,
+		"PTR":        dns.TypePTR,
+		"MX":         dns.TypeMX,
+		"TXT":        dns.TypeTXT,
+		"AAAA":       dns.TypeAAAA,
+		"SRV":        dns.TypeSRV,
+		"OPT":        dns.TypeOPT,
+		"DS":         dns.TypeDS,
+		"SSHFP":      dns.TypeSSHFP,
+		"RRSIG":      dns.TypeRRSIG,
+		"NSEC":       dns.TypeNSEC,
+		"DNSKEY":     dns.TypeDNSKEY,
+		"NSEC3":      dns.TypeNSEC3,
+		"NSEC3PARAM": dns.TypeNSEC3PARAM,
+		"TLSA":       dns.TypeTLSA,
+		"HIP":        dns.TypeHIP,
+		"CDS":        dns.TypeCDS,
+		"CDNSKEY":    dns.TypeCDNSKEY,
+		"OPENPGPKEY": dns.TypeOPENPGPKEY,
+	}
+
+	QueryTypeToString = map[uint16]string{
 		dns.TypeA:          "A",
 		dns.TypeNS:         "NS",
 		dns.TypeCNAME:      "CNAME",
@@ -62,6 +88,7 @@ var (
 
 type ReplacementRule struct {
 	Priority int    `json:"priority" yaml:"priority"`
+	IsRegExp bool   `json:"is_regexp" yaml:"is_regexp"`
 	Match    string `json:"match" yaml:"match"`
 	Spoof    string `json:"spoof" yaml:"spoof"`
 
@@ -76,7 +103,7 @@ type GodNS struct {
 	client       *dns.Client
 	clientConfig *dns.ClientConfig
 
-	Rules []*ReplacementRule
+	Rules map[string][]*ReplacementRule
 	Log   *slog.Logger
 }
 
@@ -148,7 +175,7 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 		return
 	}
 	for index := range resp.Msg.Question {
-		qType, ok := dnsQueryType[resp.Msg.Question[index].Qtype]
+		qType, ok := QueryTypeToString[resp.Msg.Question[index].Qtype]
 		if !ok {
 			qType = "UNKNOWN"
 		}
@@ -165,6 +192,7 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 
 	switch req.Question[0].Qtype {
 	case dns.TypeA:
+		g.Log.Info(fmt.Sprintf("Spoofing A record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofA(rule, req)
 	}
 
@@ -173,12 +201,27 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 }
 
 func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
-	for _, rule := range g.Rules {
-		if rule.matchRegex == nil {
-			continue
-		}
-		if rule.matchRegex.MatchString(req.Question[0].Name) {
-			return rule, true
+	replacementType, ok := QueryTypeToString[req.Question[0].Qtype]
+	if !ok {
+		return nil, false
+	}
+	if rules, ok := g.Rules[replacementType]; ok {
+		for _, rule := range rules {
+			if rule.IsRegExp {
+				if rule.matchRegex == nil {
+					continue
+				}
+				// RegExp match
+				if rule.matchRegex.MatchString(req.Question[0].Name) {
+					return rule, true
+				}
+			} else {
+				// Basic match
+				qName := strings.ToLower(strings.TrimSuffix(req.Question[0].Name, "."))
+				if qName == rule.Match {
+					return rule, true
+				}
+			}
 		}
 	}
 	return nil, false
@@ -215,10 +258,12 @@ func (g *GodNS) spoofA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 }
 
 type GodNSConfig struct {
-	Server    *ServerConfig      `json:"server" yaml:"server"`
-	Client    *ClientConfig      `json:"client" yaml:"client"`
-	Upstreams []string           `json:"upstreams" yaml:"upstreams"`
-	Rules     []*ReplacementRule `json:"rules" yaml:"rules"`
+	Server    *ServerConfig `json:"server" yaml:"server"`
+	Client    *ClientConfig `json:"client" yaml:"client"`
+	Upstreams []string      `json:"upstreams" yaml:"upstreams"`
+
+	// Rules - Map [DNS Query Type]->[ReplacementRules]
+	Rules map[string][]*ReplacementRule `json:"rules" yaml:"rules"`
 }
 
 type ServerConfig struct {
@@ -325,16 +370,22 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 }
 
 // CompileRules - Compile regex for each rule
-func CompileRules(rules []*ReplacementRule) error {
-	for _, rule := range rules {
-		regex, err := regexp.Compile(rule.Match)
-		if err != nil {
-			return err
+func CompileRules(allRules map[string][]*ReplacementRule) error {
+	for ruleType := range allRules {
+		for _, rule := range allRules[ruleType] {
+			if !rule.IsRegExp {
+				rule.Match = strings.ToLower(strings.TrimSuffix(rule.Match, "."))
+				continue
+			}
+			regex, err := regexp.Compile(rule.Match)
+			if err != nil {
+				return err
+			}
+			rule.matchRegex = regex
 		}
-		rule.matchRegex = regex
+		sort.Slice(allRules[ruleType], func(i, j int) bool {
+			return allRules[ruleType][i].Priority < allRules[ruleType][j].Priority
+		})
 	}
-	sort.Slice(rules, func(i, j int) bool {
-		return rules[i].Priority < rules[j].Priority
-	})
 	return nil
 }

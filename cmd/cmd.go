@@ -22,23 +22,36 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/moloch--/godns/pkg/godns"
 	"github.com/spf13/cobra"
 )
 
+const (
+	aRule = "a-rule"    // A rule
+	qRule = "aaaa-rule" // Quad A rule
+)
+
 func init() {
+	// Server Flags
 	rootCmd.Flags().StringP("host", "H", "", "Host to listen on")
-	rootCmd.Flags().Uint16P("port", "p", 53, "Port to listen on")
-	rootCmd.Flags().StringP("net", "n", "udp", "Network to listen on (tcp/udp)")
+	rootCmd.Flags().Uint16P("port", "P", 53, "Port to listen on")
+	rootCmd.Flags().StringP("net", "N", "udp", "Network to listen on (tcp/udp)")
 	rootCmd.Flags().StringP("dial-timeout", "d", "30s", "Dial timeout (duration)")
 	rootCmd.Flags().StringP("read-timeout", "r", "30s", "Read timeout (duration)")
 	rootCmd.Flags().StringP("write-timeout", "w", "30s", "Write timeout (duration)")
-	rootCmd.Flags().StringSliceP("rule", "R", []string{}, "Replacement rule (match:spoof:priority)")
+
+	// Upstream Flags
+	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server (host only)")
+	rootCmd.Flags().Uint16P("upstream-port", "p", 53, "Upstream DNS server port (applied to all hosts)")
+
+	// Config Flag
 	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
+
+	// Rule Flags
+	rootCmd.Flags().StringSliceP(aRule, "A", []string{}, "Replacement rule for A records (match:spoof)")
+	rootCmd.Flags().StringSliceP(qRule, "Q", []string{}, "Replacement rule for AAAA records (match:spoof)")
 
 	rootCmd.AddCommand(versionCmd)
 }
@@ -48,6 +61,10 @@ const rootLongHelp = `GodNS - The God Name Server
 A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts.
 It allows the selective replacement of specific DNS records for arbitrary domains with custom values,
 and can be used to direct traffic to a different host.
+
+Basic Usage:
+	godns --a-rule "microsoft.com:127.0.0.1" --a-rule "google.com:127.0.0.1"
+
 `
 
 var rootCmd = &cobra.Command{
@@ -61,18 +78,17 @@ var rootCmd = &cobra.Command{
 		readTimeout, _ := cmd.Flags().GetString("read-timeout")
 		writeTimeout, _ := cmd.Flags().GetString("write-timeout")
 
-		rules := parseRulesFlag(cmd)
-		if len(rules) == 0 {
+		// Parse rule flags, if any
+		allRules := map[string][]*godns.ReplacementRule{}
+		allRules["A"] = parseARules(cmd)
+		allRules["AAAA"] = parseRulesFlag(cmd, qRule)
+		if len(allRules["A"]) == 0 && len(allRules["AAAA"]) == 0 {
 			fmt.Println("Error: No rules specified")
 			os.Exit(1)
 		}
 
-		logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-		logger.Info(fmt.Sprintf("Starting GodNS %s:%d", host, port))
-
-		ns, err := godns.NewGodNS(&godns.GodNSConfig{
-			Rules: []*godns.ReplacementRule{},
-
+		startServer(&godns.GodNSConfig{
+			Rules: allRules,
 			Server: &godns.ServerConfig{
 				Host:       host,
 				ListenPort: port,
@@ -82,47 +98,50 @@ var rootCmd = &cobra.Command{
 				ReadTimeout:  readTimeout,
 				WriteTimeout: writeTimeout,
 			},
-		}, logger)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Error creating GodNS: %s", err.Error()))
-			os.Exit(1)
-		}
-		if err := ns.Start(); err != nil {
-			logger.Error(fmt.Sprintf("Error: %s", err.Error()))
-			os.Exit(1)
-		}
+		})
 	},
 }
 
-func parseRulesFlag(cmd *cobra.Command) []*godns.ReplacementRule {
-	rules, _ := cmd.Flags().GetStringSlice("rule")
+func parseARules(cmd *cobra.Command) []*godns.ReplacementRule {
+	return parseRulesFlag(cmd, aRule)
+}
+
+func parseQRules(cmd *cobra.Command) []*godns.ReplacementRule {
+	return parseRulesFlag(cmd, qRule)
+}
+
+func parseRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
+	rules, _ := cmd.Flags().GetStringSlice(flag)
 	parsedRules := []*godns.ReplacementRule{}
 	for _, rawRule := range rules {
 		segments := strings.Split(rawRule, ":")
-		if len(segments) < 2 {
+		if len(segments) != 2 {
 			fmt.Printf("Error: Invalid rule format '%s'\n", rawRule)
 			os.Exit(1)
 		}
-		if _, err := regexp.Compile(segments[0]); err != nil {
-			fmt.Printf("Error: Invalid match regex '%s'\n", segments[0])
-			os.Exit(1)
-		}
-		priority := 0
-		if len(segments) == 3 {
-			value, err := strconv.ParseInt(segments[2], 10, 32)
-			if err != nil {
-				fmt.Printf("Error: Invalid priority '%s'\n", segments[2])
-				os.Exit(1)
-			}
-			priority = int(value)
-		}
 		parsedRules = append(parsedRules, &godns.ReplacementRule{
-			Priority: priority,
+			Priority: 0,
+			IsRegExp: false,
 			Match:    segments[0],
 			Spoof:    segments[1],
 		})
 	}
 	return parsedRules
+}
+
+func startServer(config *godns.GodNSConfig) {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger.Info(fmt.Sprintf("Starting GodNS %s:%d", config.Server.Host, config.Server.ListenPort))
+
+	ns, err := godns.NewGodNS(config, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("Error creating GodNS: %s", err.Error()))
+		os.Exit(1)
+	}
+	if err := ns.Start(); err != nil {
+		logger.Error(fmt.Sprintf("Error: %s", err.Error()))
+		os.Exit(1)
+	}
 }
 
 // Execute - Execute root command
