@@ -211,15 +211,18 @@ func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
 	if rules, ok := g.Rules[replacementType]; ok {
 		for _, rule := range rules {
 			if rule.IsRegExp {
+				// RegExp match
 				if rule.matchRegex == nil {
 					continue
 				}
-				// RegExp match
 				if rule.matchRegex.MatchString(req.Question[0].Name) {
 					return rule, true
 				}
 			} else {
 				// Basic match
+				if rule.Match == "*" {
+					return rule, true
+				}
 				qName := strings.ToLower(strings.TrimSuffix(req.Question[0].Name, "."))
 				if qName == rule.Match {
 					return rule, true

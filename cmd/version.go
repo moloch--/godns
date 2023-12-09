@@ -31,6 +31,8 @@ var (
 	Revision   string
 	LastCommit time.Time
 	DirtyBuild bool
+
+	FullVersion string
 )
 
 func init() {
@@ -48,21 +50,23 @@ func init() {
 			DirtyBuild = kv.Value == "true"
 		}
 	}
+
+	version := Version
+	if version == "" {
+		version = "dev"
+	}
+	ver := fmt.Sprintf("%s - %s", version, Revision)
+	if DirtyBuild {
+		ver += " (dirty)"
+	}
+	ver += fmt.Sprintf(" - %s", LastCommit.Local())
+	FullVersion = ver
 }
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show version information",
 	Run: func(cmd *cobra.Command, args []string) {
-		version := Version
-		if version == "" {
-			version = "dev"
-		}
-		ver := fmt.Sprintf("%s - %s", version, Revision)
-		if DirtyBuild {
-			ver += " (dirty)"
-		}
-		ver += fmt.Sprintf(" - %s", LastCommit.Local())
-		fmt.Printf("%s\n", ver)
+		fmt.Printf("%s\n", FullVersion)
 	},
 }

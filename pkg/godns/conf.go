@@ -8,6 +8,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+// ParseConfigFile - Parse a config file from a given path
 func ParseConfigFile(filePath string) (*GodNSConfig, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -24,6 +25,7 @@ func ParseConfigFile(filePath string) (*GodNSConfig, error) {
 	return ParseYAMLConfig(data)
 }
 
+// ParseJSONConfig - Parse a JSON config file
 func ParseJSONConfig(data []byte) (*GodNSConfig, error) {
 	conf := &GodNSConfig{}
 	err := json.Unmarshal(data, conf)
@@ -33,6 +35,7 @@ func ParseJSONConfig(data []byte) (*GodNSConfig, error) {
 	return conf, nil
 }
 
+// ParseYAMLConfig - Parse a YAML config file
 func ParseYAMLConfig(data []byte) (*GodNSConfig, error) {
 	conf := &GodNSConfig{}
 	err := yaml.Unmarshal(data, conf)

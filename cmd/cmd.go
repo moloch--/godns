@@ -20,10 +20,13 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
 
+	"github.com/lmittmann/tint"
+	"github.com/mattn/go-isatty"
 	"github.com/moloch--/godns/pkg/godns"
 	"github.com/spf13/cobra"
 )
@@ -38,9 +41,15 @@ func init() {
 	rootCmd.Flags().StringP("host", "H", "", "Host to listen on")
 	rootCmd.Flags().Uint16P("port", "P", 53, "Port to listen on")
 	rootCmd.Flags().StringP("net", "N", "udp", "Network to listen on (tcp/udp)")
-	rootCmd.Flags().StringP("dial-timeout", "d", "30s", "Dial timeout (duration)")
-	rootCmd.Flags().StringP("read-timeout", "r", "30s", "Read timeout (duration)")
-	rootCmd.Flags().StringP("write-timeout", "w", "30s", "Write timeout (duration)")
+	rootCmd.Flags().StringP("dial-timeout", "D", "30s", "Dial timeout (duration)")
+	rootCmd.Flags().StringP("read-timeout", "R", "30s", "Read timeout (duration)")
+	rootCmd.Flags().StringP("write-timeout", "W", "30s", "Write timeout (duration)")
+
+	// Logging Flags
+	rootCmd.Flags().StringP("log-file", "f", "", "Log file path (append if exists)")
+	rootCmd.Flags().StringP("log-level", "l", "info", "Log level (debug/info/warn/error)")
+	rootCmd.Flags().BoolP("log-pretty", "t", true, "Log using pretty terminal colors")
+	rootCmd.Flags().BoolP("log-json", "j", false, "Log in JSON format")
 
 	// Upstream Flags
 	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server (host only)")
@@ -50,8 +59,8 @@ func init() {
 	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
 
 	// Rule Flags
-	rootCmd.Flags().StringSliceP(aRule, "A", []string{}, "Replacement rule for A records (match:spoof)")
-	rootCmd.Flags().StringSliceP(qRule, "Q", []string{}, "Replacement rule for AAAA records (match:spoof)")
+	rootCmd.Flags().StringSliceP(aRule, "A", []string{}, "Replacement rule for A records (match|spoof)")
+	rootCmd.Flags().StringSliceP(qRule, "Q", []string{}, "Replacement rule for AAAA records (match|spoof)")
 
 	rootCmd.AddCommand(versionCmd)
 }
@@ -62,9 +71,20 @@ A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malw
 It allows the selective replacement of specific DNS records for arbitrary domains with custom values,
 and can be used to direct traffic to a different host.
 
-Basic Usage:
-	godns --a-rule "microsoft.com:127.0.0.1" --a-rule "google.com:127.0.0.1"
+Basic rules can be passed via the command line, basic rules simply match a domain name and record type
+and spoof the response using the provided value. For example, to spoof all A records for various domains:
+	
+	godns --a-rule "microsoft.com|127.0.0.1" --a-rule "google.com|127.0.0.1"
 
+The command line also allows a global wild card match '*' to match all domains. For example, to spoof
+all A records for all domains:
+
+	godns --a-rule "*|127.0.0.1"
+
+For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that
+contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type
+and priority. Configuration file also allow for regular expression matching, and can be used to spoof
+multiple records for a single domain. For more information, run the command 'godns config --help'
 `
 
 var rootCmd = &cobra.Command{
@@ -87,6 +107,9 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Parse log flags
+		logger := parseLogFlags(cmd)
+
 		startServer(&godns.GodNSConfig{
 			Rules: allRules,
 			Server: &godns.ServerConfig{
@@ -98,7 +121,7 @@ var rootCmd = &cobra.Command{
 				ReadTimeout:  readTimeout,
 				WriteTimeout: writeTimeout,
 			},
-		})
+		}, logger)
 	},
 }
 
@@ -114,7 +137,7 @@ func parseRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
 	rules, _ := cmd.Flags().GetStringSlice(flag)
 	parsedRules := []*godns.ReplacementRule{}
 	for _, rawRule := range rules {
-		segments := strings.Split(rawRule, ":")
+		segments := strings.Split(rawRule, "|")
 		if len(segments) != 2 {
 			fmt.Printf("Error: Invalid rule format '%s'\n", rawRule)
 			os.Exit(1)
@@ -129,9 +152,41 @@ func parseRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
 	return parsedRules
 }
 
-func startServer(config *godns.GodNSConfig) {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	logger.Info(fmt.Sprintf("Starting GodNS %s:%d", config.Server.Host, config.Server.ListenPort))
+func parseLogFlags(cmd *cobra.Command) *slog.Logger {
+	logFilePath, _ := cmd.Flags().GetString("log-file")
+	logJSON, _ := cmd.Flags().GetBool("log-json")
+
+	var logger *slog.Logger
+	var logOutput io.Writer = os.Stdout
+
+	if logFilePath != "" {
+		logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			fmt.Printf("Error opening log file '%s': %s\n", logFilePath, err.Error())
+			os.Exit(1)
+		}
+		logOutput = io.MultiWriter(os.Stdout, logFile)
+	}
+
+	opts := &slog.HandlerOptions{Level: slog.LevelInfo}
+
+	if logJSON {
+		logger = slog.New(slog.NewJSONHandler(logOutput, opts))
+	} else {
+		if logPretty, _ := cmd.Flags().GetBool("log-pretty"); logPretty {
+			logger = slog.New(tint.NewHandler(logOutput, &tint.Options{
+				NoColor: !isatty.IsTerminal(os.Stdout.Fd()),
+			}))
+		} else {
+			logger = slog.New(slog.NewTextHandler(logOutput, opts))
+		}
+	}
+
+	return logger
+}
+
+func startServer(config *godns.GodNSConfig, logger *slog.Logger) {
+	logger.Info(fmt.Sprintf("Starting GodNS %s (%s:%d)", FullVersion, config.Server.Host, config.Server.ListenPort))
 
 	ns, err := godns.NewGodNS(config, logger)
 	if err != nil {

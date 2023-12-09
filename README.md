@@ -4,6 +4,29 @@ A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malw
 
 [![Build Check](https://github.com/moloch--/godns/actions/workflows/build-check.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/build-check.yml)
 
+### Basic Usage
+
+Basic rules can be passed via the command line, basic rules simply match a domain name for a record type
+and spoof the response using the provided value. For example, to spoof all `A` records for various domains:
+
+```bash
+godns --a-rule "microsoft.com|127.0.0.1" --a-rule "google.com|127.0.0.1"
+```
+
+One special case is allowed for the command line, if the value is set to `*` then all records are spoofed for
+associated record type. For example, to spoof all `A` and `AAAA` records for all domains:
+
+```bash
+godns --a-rule "*|127.0.0.1" --aaaa-rule "*|::1"
+```
+
+### Advanced Usage
+
+For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that
+contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type
+and priority. Configuration file also allow for regular expression matching, and can be used to spoof
+multiple records for a single domain.
+
 ### Support Platforms
 
 GodNS is a standalone statically compiled binary, and runs on nearly every operating system and CPU architecture:

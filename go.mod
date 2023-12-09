@@ -3,6 +3,8 @@ module github.com/moloch--/godns
 go 1.21.5
 
 require (
+	github.com/lmittmann/tint v1.0.3
+	github.com/mattn/go-isatty v0.0.20
 	github.com/miekg/dns v1.1.57
 	github.com/spf13/cobra v1.8.0
 	golang.org/x/sys v0.13.0
