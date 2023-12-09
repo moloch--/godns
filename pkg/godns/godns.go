@@ -88,6 +88,12 @@ func (g *GodNS) Stop() error {
 	return g.server.Shutdown()
 }
 
+type godNSResult struct {
+	Msg *dns.Msg
+	Rtt time.Duration
+	Err error
+}
+
 // HandleDNSRequest - Handle a DNS request
 func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	msg := &dns.Msg{}
@@ -105,56 +111,40 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	upstreamHost := g.clientConfig.Servers[insecureRand.Intn(len(g.clientConfig.Servers))]
 	upstream = fmt.Sprintf("%s:%s", upstreamHost, g.clientConfig.Port)
 
-	wg := sync.WaitGroup{}
+	resultChan := make(chan godNSResult, 1)
 
-	var upstreamMsg *dns.Msg
-	var upstreamRtt time.Duration
-	var upstreamErr error
-	wg.Add(1)
+	upstreamWg := sync.WaitGroup{}
+	upstreamWg.Add(1)
+
+	upstreamResult := make(chan godNSResult, 1)
 	go func() {
-		defer wg.Done()
-		upstreamMsg, upstreamRtt, upstreamErr = g.client.Exchange(req, upstream)
+		defer upstreamWg.Done()
+		msg, rtt, err := g.client.Exchange(req, upstream)
+		upstreamResult <- godNSResult{Msg: msg, Rtt: rtt, Err: err}
 	}()
 
-	var replaceMsg *dns.Msg
-	wg.Add(1)
 	go func(msg *dns.Msg) {
-		defer wg.Done()
-		replaceMsg = g.replacement(msg)
+		replaceMsg := g.replacement(msg)
 		if replaceMsg != nil {
-			wg.Done() // Short circuit the upstream goroutine
+			resultChan <- godNSResult{Msg: replaceMsg, Rtt: 0, Err: nil}
 		}
+		upstreamWg.Wait() // Only wait for upstream if we're not replacing the response
+		resultChan <- <-upstreamResult
 	}(req)
 
-	wg.Wait()
+	result := <-resultChan
 
-	var resp *dns.Msg
-	var rtt time.Duration
-	if replaceMsg != nil {
-		resp = replaceMsg
-		rtt = 0
-	} else {
-		resp = upstreamMsg
-		rtt = upstreamRtt
-	}
-
-	if resp == nil && upstreamErr != nil {
-		msg.SetRcode(req, dns.RcodeServerFailure)
-		writer.WriteMsg(msg)
-		return
-	}
-
-	err := writer.WriteMsg(resp)
+	err := writer.WriteMsg(result.Msg)
 	if err != nil {
 		g.Log.Error(fmt.Sprintf("Error writing response: %s", err.Error()))
 		return
 	}
-	for index := range resp.Question {
-		qType, ok := dnsQueryType[resp.Question[index].Qtype]
+	for index := range result.Msg.Question {
+		qType, ok := dnsQueryType[result.Msg.Question[index].Qtype]
 		if !ok {
 			qType = "UNKNOWN"
 		}
-		g.Log.Info(fmt.Sprintf("[%s] %s from %s upstream->%s took %s", qType, req.Question[index].Name, writer.RemoteAddr().String(), upstream, rtt))
+		g.Log.Info(fmt.Sprintf("[%s] %s from %s upstream->%s took %s", qType, req.Question[index].Name, writer.RemoteAddr().String(), upstream, result.Rtt))
 	}
 }
 
@@ -162,6 +152,7 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 	if !g.matchReplacement(req) {
 		return nil
 	}
+
 	switch req.Question[0].Qtype {
 	case dns.TypeA:
 		return g.spoofA(req)
@@ -282,6 +273,16 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 			WriteTimeout: writeTimeout,
 		},
 		clientConfig: clientConfig,
+
+		// Rules
+		Rules: []*ReplacementRule{
+			{
+				Priority:   1,
+				Match:      ".*",
+				Spoof:      "127.0.0.1",
+				matchRegex: regexp.MustCompile(".*"),
+			},
+		},
 
 		// Logger
 		Log: logger,
