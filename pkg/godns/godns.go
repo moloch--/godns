@@ -277,6 +277,10 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 			Port:    "53",
 		}
 	}
+	if len(clientConfig.Servers) == 0 {
+		logger.Error("No upstream DNS servers provided")
+		return nil, fmt.Errorf("no upstream DNS servers")
+	}
 	logger.Info(fmt.Sprintf("Upstream DNS resolvers: %s", strings.Join(clientConfig.Servers, ",")))
 
 	// Validate server config

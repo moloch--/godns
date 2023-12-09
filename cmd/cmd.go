@@ -22,6 +22,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/moloch--/godns/pkg/godns"
 	"github.com/spf13/cobra"
@@ -34,15 +37,18 @@ func init() {
 	rootCmd.Flags().StringP("dial-timeout", "d", "30s", "Dial timeout (duration)")
 	rootCmd.Flags().StringP("read-timeout", "r", "30s", "Read timeout (duration)")
 	rootCmd.Flags().StringP("write-timeout", "w", "30s", "Write timeout (duration)")
-
+	rootCmd.Flags().StringSliceP("rule", "R", []string{}, "Replacement rule (match:spoof:priority)")
 	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
+
+	rootCmd.AddCommand(versionCmd)
 }
 
 const rootLongHelp = `GodNS - The God Name Server
 
 A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts.
 It allows the selective replacement of specific DNS records for arbitrary domains with custom values,
-and can be used to direct traffic to a different host.`
+and can be used to direct traffic to a different host.
+`
 
 var rootCmd = &cobra.Command{
 	Use:   "godns",
@@ -55,17 +61,17 @@ var rootCmd = &cobra.Command{
 		readTimeout, _ := cmd.Flags().GetString("read-timeout")
 		writeTimeout, _ := cmd.Flags().GetString("write-timeout")
 
+		rules := parseRulesFlag(cmd)
+		if len(rules) == 0 {
+			fmt.Println("Error: No rules specified")
+			os.Exit(1)
+		}
+
 		logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 		logger.Info(fmt.Sprintf("Starting GodNS %s:%d", host, port))
 
 		ns, err := godns.NewGodNS(&godns.GodNSConfig{
-			Rules: []*godns.ReplacementRule{
-				{
-					Priority: 1,
-					Match:    ".*",
-					Spoof:    "1.3.3.7",
-				},
-			},
+			Rules: []*godns.ReplacementRule{},
 
 			Server: &godns.ServerConfig{
 				Host:       host,
@@ -86,6 +92,37 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+func parseRulesFlag(cmd *cobra.Command) []*godns.ReplacementRule {
+	rules, _ := cmd.Flags().GetStringSlice("rule")
+	parsedRules := []*godns.ReplacementRule{}
+	for _, rawRule := range rules {
+		segments := strings.Split(rawRule, ":")
+		if len(segments) < 2 {
+			fmt.Printf("Error: Invalid rule format '%s'\n", rawRule)
+			os.Exit(1)
+		}
+		if _, err := regexp.Compile(segments[0]); err != nil {
+			fmt.Printf("Error: Invalid match regex '%s'\n", segments[0])
+			os.Exit(1)
+		}
+		priority := 0
+		if len(segments) == 3 {
+			value, err := strconv.ParseInt(segments[2], 10, 32)
+			if err != nil {
+				fmt.Printf("Error: Invalid priority '%s'\n", segments[2])
+				os.Exit(1)
+			}
+			priority = int(value)
+		}
+		parsedRules = append(parsedRules, &godns.ReplacementRule{
+			Priority: priority,
+			Match:    segments[0],
+			Spoof:    segments[1],
+		})
+	}
+	return parsedRules
 }
 
 // Execute - Execute root command
