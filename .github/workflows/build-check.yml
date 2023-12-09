@@ -33,7 +33,7 @@ jobs:
 
   ios-build:
     name: iOS Build
-    runs-on: macos-13-large
+    runs-on: macos-latest-xlarge
     timeout-minutes: 45
     steps:
       - name: Go 1.21
