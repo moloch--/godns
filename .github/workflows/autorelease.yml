@@ -211,6 +211,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
+      - name: Check Out Code
+        uses: actions/checkout@v4
+
+      - name: Git Fetch Tags
+        run: git fetch --prune --unshallow --tags -f
+
       - run: mkdir -p ./builds
       - uses: actions/download-artifact@v3
         with:

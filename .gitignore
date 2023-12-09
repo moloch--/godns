@@ -2,3 +2,5 @@
 /godns
 /*.exe
 /godns_*
+/builds
+/release
