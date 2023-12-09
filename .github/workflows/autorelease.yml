@@ -226,10 +226,13 @@ jobs:
           mv ./builds/other-builds/* ./release/
           mv ./builds/windows-builds/* ./release/
 
-      - name: "Release"
-        uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Get Version
+        id: tag-name
+        run: git describe --tags >> $GITHUB_OUTPUT
+
+      - name: "Publish Release"
+        uses: "bishopfox/action-gh-release@v1"
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
+          tag_name: ${{ steps.tag-name.outputs.version }}
           files: |
             ./release/*
