@@ -48,6 +48,7 @@ jobs:
 
       - name: Go Build
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+
       - name: Upload
         uses: actions/upload-artifact@v3
         with:

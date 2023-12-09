@@ -61,6 +61,7 @@ func init() {
 	rootCmd.Flags().StringSliceP(aRule, "A", []string{}, "Replacement rule for A records (match|spoof)")
 	rootCmd.Flags().StringSliceP(qRule, "Q", []string{}, "Replacement rule for AAAA records (match|spoof)")
 
+	rootCmd.AddCommand(licenseCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 
