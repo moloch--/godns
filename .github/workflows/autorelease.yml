@@ -237,7 +237,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: "Publish Release"
-        uses: "bishopfox/action-gh-release@v1"
+        uses: "softprops/action-gh-release@v1"
         with:
           tag_name: ${{ steps.tag-name.outputs.version }}
           files: |
