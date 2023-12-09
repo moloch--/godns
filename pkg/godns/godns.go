@@ -25,6 +25,8 @@ import (
 	insecureRand "math/rand"
 	"net"
 	"regexp"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -106,75 +108,83 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 		return
 	}
 
-	// Proxy the request to the upstream resolver
+	// Final Result Channel
+	resultChan := make(chan godNSResult, 1)
+
+	// Proxy the request to the upstream resolver, we always send this upstream request
+	// first then evaluate if we need to replace the response to minimize time spent
+	// waiting for the network
 	var upstream string
 	upstreamHost := g.clientConfig.Servers[insecureRand.Intn(len(g.clientConfig.Servers))]
 	upstream = fmt.Sprintf("%s:%s", upstreamHost, g.clientConfig.Port)
-
-	resultChan := make(chan godNSResult, 1)
-
 	upstreamWg := sync.WaitGroup{}
 	upstreamWg.Add(1)
-
 	upstreamResult := make(chan godNSResult, 1)
-	go func() {
+	go func(req *dns.Msg, upstream string) {
 		defer upstreamWg.Done()
 		msg, rtt, err := g.client.Exchange(req, upstream)
 		upstreamResult <- godNSResult{Msg: msg, Rtt: rtt, Err: err}
-	}()
+	}(req, upstream)
 
+	// After sending the upstream request, check if we need to replace the response
+	// If we do, then we'll ignore the upstream response and just send our own thru
+	// the channel. If we don't replace the response then we wait for the upstream
 	go func(msg *dns.Msg) {
+		started := time.Now()
 		replaceMsg := g.replacement(msg)
 		if replaceMsg != nil {
-			resultChan <- godNSResult{Msg: replaceMsg, Rtt: 0, Err: nil}
+			rtt := time.Since(started)
+			resultChan <- godNSResult{Msg: replaceMsg, Rtt: rtt, Err: nil}
 		}
 		upstreamWg.Wait() // Only wait for upstream if we're not replacing the response
 		resultChan <- <-upstreamResult
 	}(req)
 
-	result := <-resultChan
+	resp := <-resultChan
 
-	err := writer.WriteMsg(result.Msg)
+	err := writer.WriteMsg(resp.Msg)
 	if err != nil {
 		g.Log.Error(fmt.Sprintf("Error writing response: %s", err.Error()))
 		return
 	}
-	for index := range result.Msg.Question {
-		qType, ok := dnsQueryType[result.Msg.Question[index].Qtype]
+	for index := range resp.Msg.Question {
+		qType, ok := dnsQueryType[resp.Msg.Question[index].Qtype]
 		if !ok {
 			qType = "UNKNOWN"
 		}
-		g.Log.Info(fmt.Sprintf("[%s] %s from %s upstream->%s took %s", qType, req.Question[index].Name, writer.RemoteAddr().String(), upstream, result.Rtt))
+		g.Log.Info(fmt.Sprintf("[%s] %s from %s upstream->%s took %s", qType, req.Question[index].Name, writer.RemoteAddr().String(), upstream, resp.Rtt))
 	}
 }
 
 func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
-	if !g.matchReplacement(req) {
+	var ok bool
+	var rule *ReplacementRule
+	if rule, ok = g.matchReplacement(req); !ok {
 		return nil
 	}
 
 	switch req.Question[0].Qtype {
 	case dns.TypeA:
-		return g.spoofA(req)
+		return g.spoofA(rule, req)
 	}
 
 	g.Log.Warn(fmt.Sprintf("Unhandled DNS record type for spoof: %s", req.Question[0].String()))
 	return nil
 }
 
-func (g *GodNS) matchReplacement(req *dns.Msg) bool {
+func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
 	for _, rule := range g.Rules {
 		if rule.matchRegex == nil {
 			continue
 		}
 		if rule.matchRegex.MatchString(req.Question[0].Name) {
-			return true
+			return rule, true
 		}
 	}
-	return false
+	return nil, false
 }
 
-func (g *GodNS) spoofA(req *dns.Msg) *dns.Msg {
+func (g *GodNS) spoofA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:                 req.Id,
@@ -198,22 +208,23 @@ func (g *GodNS) spoofA(req *dns.Msg) *dns.Msg {
 					Class:  dns.ClassINET,
 					Ttl:    0,
 				},
-				A: net.ParseIP(g.Rules[0].Spoof).To4(),
+				A: net.ParseIP(rule.Spoof).To4(),
 			},
 		},
 	}
 }
 
 type GodNSConfig struct {
-	Server *ServerConfig      `json:"server" yaml:"server"`
-	Client *ClientConfig      `json:"client" yaml:"client"`
-	Rules  []*ReplacementRule `json:"rules" yaml:"rules"`
+	Server    *ServerConfig      `json:"server" yaml:"server"`
+	Client    *ClientConfig      `json:"client" yaml:"client"`
+	Upstreams []string           `json:"upstreams" yaml:"upstreams"`
+	Rules     []*ReplacementRule `json:"rules" yaml:"rules"`
 }
 
 type ServerConfig struct {
+	Net        string `json:"net" yaml:"net"`
 	Host       string `json:"host" yaml:"host"`
 	ListenPort uint16 `json:"listen_port" yaml:"listen_port"`
-	Net        string `json:"net" yaml:"net"`
 }
 
 type ClientConfig struct {
@@ -225,36 +236,59 @@ type ClientConfig struct {
 
 // NewGodNS - Create a new GodNS instance
 func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
+	// Create dev null logger if no logger was provided
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 
 	// Validate client config
 	if config.Client.Net == "" {
+		logger.Debug("No client network provided, defaulting to udp")
 		config.Client.Net = "udp"
 	}
 	dialTimeout, err := time.ParseDuration(config.Client.DialTimeout)
 	if err != nil {
+		logger.Error(fmt.Sprintf("failed to parse dial timeout '%s' %s", config.Client.DialTimeout, err.Error()))
 		return nil, err
 	}
 	readTimeout, err := time.ParseDuration(config.Client.ReadTimeout)
 	if err != nil {
+		logger.Error(fmt.Sprintf("failed to parse read timeout '%s' %s", config.Client.ReadTimeout, err.Error()))
 		return nil, err
 	}
 	writeTimeout, err := time.ParseDuration(config.Client.WriteTimeout)
 	if err != nil {
+		logger.Error(fmt.Sprintf("failed to parse write timeout '%s' %s", config.Client.WriteTimeout, err.Error()))
 		return nil, err
 	}
-	clientConfig, err := DNSClientConfig()
-	if err != nil {
-		return nil, err
+
+	var clientConfig *dns.ClientConfig
+	if len(config.Upstreams) == 0 {
+		logger.Debug("No upstreams provided, using system DNS configuration")
+		var err error
+		clientConfig, err = DNSClientConfig()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		logger.Debug("Using provided upstreams from config")
+		clientConfig = &dns.ClientConfig{
+			Servers: config.Upstreams,
+			Port:    "53",
+		}
 	}
+	logger.Info(fmt.Sprintf("Upstream DNS resolvers: %s", strings.Join(clientConfig.Servers, ",")))
 
 	// Validate server config
 	if config.Server.Net == "" {
+		logger.Debug("No server network provided, defaulting to udp")
 		config.Server.Net = "udp"
 	}
 
-	// Create dev null logger if no logger was provided
-	if logger == nil {
-		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	// Compile rules
+	if err := CompileRules(config.Rules); err != nil {
+		logger.Error(fmt.Sprintf("failed to compile rule regex: %s", err.Error()))
+		return nil, err
 	}
 
 	godNS := &GodNS{
@@ -275,14 +309,7 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 		clientConfig: clientConfig,
 
 		// Rules
-		Rules: []*ReplacementRule{
-			{
-				Priority:   1,
-				Match:      ".*",
-				Spoof:      "127.0.0.1",
-				matchRegex: regexp.MustCompile(".*"),
-			},
-		},
+		Rules: config.Rules,
 
 		// Logger
 		Log: logger,
@@ -291,4 +318,19 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 		godNS.HandleDNSRequest(writer, req)
 	})
 	return godNS, nil
+}
+
+// CompileRules - Compile regex for each rule
+func CompileRules(rules []*ReplacementRule) error {
+	for _, rule := range rules {
+		regex, err := regexp.Compile(rule.Match)
+		if err != nil {
+			return err
+		}
+		rule.matchRegex = regex
+	}
+	sort.Slice(rules, func(i, j int) bool {
+		return rules[i].Priority < rules[j].Priority
+	})
+	return nil
 }

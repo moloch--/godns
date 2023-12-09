@@ -30,14 +30,17 @@ import (
 func init() {
 	rootCmd.Flags().StringP("host", "H", "", "Host to listen on")
 	rootCmd.Flags().Uint16P("port", "p", 53, "Port to listen on")
-	rootCmd.Flags().StringP("dial-timeout", "d", "30s", "Dial timeout")
-	rootCmd.Flags().StringP("read-timeout", "r", "30s", "Read timeout")
-	rootCmd.Flags().StringP("write-timeout", "w", "30s", "Write timeout")
+	rootCmd.Flags().StringP("net", "n", "udp", "Network to listen on (tcp/udp)")
+	rootCmd.Flags().StringP("dial-timeout", "d", "30s", "Dial timeout (duration)")
+	rootCmd.Flags().StringP("read-timeout", "r", "30s", "Read timeout (duration)")
+	rootCmd.Flags().StringP("write-timeout", "w", "30s", "Write timeout (duration)")
+
+	rootCmd.Flags().StringP("config", "c", "", "Config file")
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "godns",
-	Short: "",
+	Short: "The God Name Server",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		host, _ := cmd.Flags().GetString("host")
@@ -50,6 +53,14 @@ var rootCmd = &cobra.Command{
 		logger.Info(fmt.Sprintf("Starting GodNS %s:%d", host, port))
 
 		ns, err := godns.NewGodNS(&godns.GodNSConfig{
+			Rules: []*godns.ReplacementRule{
+				{
+					Priority: 1,
+					Match:    ".*",
+					Spoof:    "1.3.3.7",
+				},
+			},
+
 			Server: &godns.ServerConfig{
 				Host:       host,
 				ListenPort: port,

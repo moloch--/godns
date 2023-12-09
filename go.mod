@@ -6,6 +6,7 @@ require (
 	github.com/miekg/dns v1.1.57
 	github.com/spf13/cobra v1.8.0
 	golang.org/x/sys v0.13.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -2,6 +2,8 @@
 
 A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts, inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host.
 
+[![Build Check](https://github.com/moloch--/godns/actions/workflows/build-check.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/build-check.yml)
+
 ### Support Platforms
 
 GodNS is a standalone statically compiled binary, and runs on nearly every operating system and CPU architecture:
