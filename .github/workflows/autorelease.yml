@@ -9,6 +9,7 @@ on:
 jobs:
   linux-builds:
     name: Linux Builds
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -82,6 +83,7 @@ jobs:
 
   ios-build:
     name: iOS Build
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: macos-latest-xlarge
     timeout-minutes: 10
     steps:
@@ -107,6 +109,7 @@ jobs:
 
   android-build:
     name: Android Build
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -132,6 +135,7 @@ jobs:
 
   other-builds:
     name: Other Builds
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
