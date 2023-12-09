@@ -20,7 +20,6 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -46,10 +45,8 @@ func init() {
 	rootCmd.Flags().StringP("write-timeout", "W", "30s", "Write timeout (duration)")
 
 	// Logging Flags
-	rootCmd.Flags().StringP("log-file", "f", "", "Log file path (append if exists)")
 	rootCmd.Flags().StringP("log-level", "l", "info", "Log level (debug/info/warn/error)")
 	rootCmd.Flags().BoolP("log-pretty", "t", true, "Log using pretty terminal colors")
-	rootCmd.Flags().BoolP("log-json", "j", false, "Log in JSON format")
 
 	// Upstream Flags
 	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server (host only)")
@@ -84,7 +81,7 @@ all A records for all domains:
 For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that
 contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type
 and priority. Configuration file also allow for regular expression matching, and can be used to spoof
-multiple records for a single domain. For more information, run the command 'godns config --help'
+multiple records for a single domain.
 `
 
 var rootCmd = &cobra.Command{
@@ -153,35 +150,34 @@ func parseRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
 }
 
 func parseLogFlags(cmd *cobra.Command) *slog.Logger {
-	logFilePath, _ := cmd.Flags().GetString("log-file")
-	logJSON, _ := cmd.Flags().GetBool("log-json")
-
 	var logger *slog.Logger
-	var logOutput io.Writer = os.Stdout
 
-	if logFilePath != "" {
-		logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-		if err != nil {
-			fmt.Printf("Error opening log file '%s': %s\n", logFilePath, err.Error())
-			os.Exit(1)
-		}
-		logOutput = io.MultiWriter(os.Stdout, logFile)
+	// parse log level
+	logLevel, _ := cmd.Flags().GetString("log-level")
+	opts := &slog.HandlerOptions{}
+	switch strings.ToLower(logLevel) {
+	case "debug":
+		opts.Level = slog.LevelDebug
+	case "info":
+		opts.Level = slog.LevelInfo
+	case "warn":
+		opts.Level = slog.LevelWarn
+	case "error":
+		opts.Level = slog.LevelError
+	default:
+		opts.Level = slog.LevelInfo
 	}
 
-	opts := &slog.HandlerOptions{Level: slog.LevelInfo}
-
-	if logJSON {
-		logger = slog.New(slog.NewJSONHandler(logOutput, opts))
+	// Initialize root logger
+	if logPretty, _ := cmd.Flags().GetBool("log-pretty"); logPretty {
+		logger = slog.New(tint.NewHandler(os.Stderr, &tint.Options{
+			NoColor: !isatty.IsTerminal(os.Stderr.Fd()),
+		}))
 	} else {
-		if logPretty, _ := cmd.Flags().GetBool("log-pretty"); logPretty {
-			logger = slog.New(tint.NewHandler(logOutput, &tint.Options{
-				NoColor: !isatty.IsTerminal(os.Stdout.Fd()),
-			}))
-		} else {
-			logger = slog.New(slog.NewTextHandler(logOutput, opts))
-		}
+		logger = slog.New(slog.NewTextHandler(os.Stderr, opts))
 	}
 
+	slog.SetDefault(logger)
 	return logger
 }
 
