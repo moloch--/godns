@@ -3,6 +3,8 @@ name: Github Release
 on:
   push:
     branches: [main]
+    tags:
+      - "v*"
 
 jobs:
   linux-builds:
