@@ -12,7 +12,7 @@ GodNS is a standalone statically compiled binary, and runs on nearly every opera
 - FreeBSD (amd64, arm64)
 - OpenBSD (amd64, arm64)
 - NetBSD (amd64, arm64)
-- DragonFly BSD (amd64)
+- DragonFlyBSD (amd64, arm64)
 - Plan 9 (amd64)
 - Solaris (amd64)
 - iOS (arm64)

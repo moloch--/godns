@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        goos: [darwin, freebsd, openbsd, netbsd]
+        goos: [darwin, freebsd, openbsd, netbsd, dragonfly]
         goarch: [amd64, arm64]
 
     steps:
@@ -140,7 +140,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        goos: [dragonfly, plan9, solaris]
+        goos: [plan9, solaris]
         goarch: [amd64]
 
     steps:
