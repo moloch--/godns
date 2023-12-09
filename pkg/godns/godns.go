@@ -164,7 +164,10 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 
 	godNS := &GodNS{
 		// Server
-		server:       &dns.Server{Addr: fmt.Sprintf("%s:%d", config.Server.Host, config.Server.ListenPort), Net: config.Server.Net},
+		server: &dns.Server{
+			Addr: fmt.Sprintf("%s:%d", config.Server.Host, config.Server.ListenPort),
+			Net:  config.Server.Net,
+		},
 		serverConfig: config,
 
 		// Client
