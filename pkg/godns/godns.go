@@ -194,9 +194,12 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 	case dns.TypeA:
 		g.Log.Info(fmt.Sprintf("Spoofing A record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofA(rule, req)
+	case dns.TypeAAAA:
+		g.Log.Info(fmt.Sprintf("Spoofing AAAA record for %s to %s", req.Question[0].Name, rule.Spoof))
+		return g.spoofAAAA(rule, req)
 	}
 
-	g.Log.Warn(fmt.Sprintf("Unhandled DNS record type for spoof: %s", req.Question[0].String()))
+	g.Log.Warn(fmt.Sprintf("Unsupported DNS record type for spoofing: %s", req.Question[0].String()))
 	return nil
 }
 
@@ -255,6 +258,37 @@ func (g *GodNS) spoofA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 			},
 		},
 	}
+}
+
+func (g *GodNS) spoofAAAA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           true,
+			Opcode:             req.Opcode,
+			Authoritative:      true,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: req.RecursionAvailable,
+			AuthenticatedData:  req.AuthenticatedData,
+			CheckingDisabled:   req.CheckingDisabled,
+			Rcode:              dns.RcodeSuccess,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+		Answer: []dns.RR{
+			&dns.AAAA{
+				Hdr: dns.RR_Header{
+					Name:   req.Question[0].Name,
+					Rrtype: dns.TypeAAAA,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				AAAA: net.ParseIP(rule.Spoof).To16(),
+			},
+		},
+	}
+
 }
 
 type GodNSConfig struct {
