@@ -35,11 +35,6 @@ jobs:
     name: Mobile Builds
     runs-on: macos-latest
     timeout-minutes: 45
-    strategy:
-      matrix:
-        goos: [android, ios]
-        goarch: [arm64]
-
     steps:
       - name: Go 1.21
         uses: actions/setup-go@v4
@@ -53,7 +48,9 @@ jobs:
         run: git fetch --prune --unshallow --tags -f
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: |
+          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./godns_android-arm64 .
+          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./godns_ios-arm64 .
 
   other-builds:
     name: Other Builds
