@@ -35,13 +35,19 @@ func init() {
 	rootCmd.Flags().StringP("read-timeout", "r", "30s", "Read timeout (duration)")
 	rootCmd.Flags().StringP("write-timeout", "w", "30s", "Write timeout (duration)")
 
-	rootCmd.Flags().StringP("config", "c", "", "Config file")
+	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
 }
+
+const rootLongHelp = `GodNS - The God Name Server
+
+A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts.
+It allows the selective replacement of specific DNS records for arbitrary domains with custom values,
+and can be used to direct traffic to a different host.`
 
 var rootCmd = &cobra.Command{
 	Use:   "godns",
 	Short: "The God Name Server",
-	Long:  ``,
+	Long:  rootLongHelp,
 	Run: func(cmd *cobra.Command, args []string) {
 		host, _ := cmd.Flags().GetString("host")
 		port, _ := cmd.Flags().GetUint16("port")
