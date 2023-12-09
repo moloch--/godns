@@ -162,7 +162,28 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 	if !g.matchReplacement(req) {
 		return nil
 	}
+	switch req.Question[0].Qtype {
+	case dns.TypeA:
+		return g.spoofA(req)
+	}
 
+	g.Log.Warn(fmt.Sprintf("Unhandled DNS record type for spoof: %s", req.Question[0].String()))
+	return nil
+}
+
+func (g *GodNS) matchReplacement(req *dns.Msg) bool {
+	for _, rule := range g.Rules {
+		if rule.matchRegex == nil {
+			continue
+		}
+		if rule.matchRegex.MatchString(req.Question[0].Name) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GodNS) spoofA(req *dns.Msg) *dns.Msg {
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:                 req.Id,
@@ -190,18 +211,6 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 			},
 		},
 	}
-}
-
-func (g *GodNS) matchReplacement(req *dns.Msg) bool {
-	for _, rule := range g.Rules {
-		if rule.matchRegex == nil {
-			continue
-		}
-		if rule.matchRegex.MatchString(req.Question[0].Name) {
-			return true
-		}
-	}
-	return false
 }
 
 type GodNSConfig struct {
