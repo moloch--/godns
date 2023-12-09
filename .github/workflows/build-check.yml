@@ -53,7 +53,7 @@ jobs:
 
   androiod-build:
     name: Android Build
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Go 1.21
