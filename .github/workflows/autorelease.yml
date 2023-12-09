@@ -7,7 +7,7 @@ on:
 jobs:
   unix-builds:
     name: Unix Builds
-    if: startsWith( github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -34,12 +34,12 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: builds
+          name: unix-builds
           path: ./godns_*
 
   windows-builds:
     name: Windows Builds
-    if: startsWith( github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -65,5 +65,24 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: builds
+          name: windows-builds
           path: ./godns_*
+
+  tagged-release:
+    needs: [unix-builds, windows-builds]
+
+    name: "Tagged Release"
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - run: mkdir -p ./builds
+      - uses: actions/download-artifact@v3
+        with:
+          path: ./builds
+
+      - name: "Publish Release"
+        uses: "bishopfox/action-gh-release@v1"
+        with:
+          files: |
+            ./builds/*
