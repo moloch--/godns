@@ -216,8 +216,18 @@ jobs:
         with:
           path: ./builds
 
+      - name: Move Builds
+        run: |
+          mkdir ./release
+          mv ./builds/linux-builds/* ./release/
+          mv ./builds/bsd-builds/* ./release/
+          mv ./builds/ios-build/* ./release/
+          mv ./builds/android-build/* ./release/
+          mv ./builds/other-builds/* ./release/
+          mv ./builds/windows-builds/* ./release/
+
       - name: "Publish Release"
         uses: "bishopfox/action-gh-release@v1"
         with:
           files: |
-            ./builds/*
+            ./release/*
