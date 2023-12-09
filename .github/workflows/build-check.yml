@@ -2,8 +2,15 @@ name: Build Check
 
 on:
   push:
+    paths:
+      - "go.mod"
+      - "**.go"
     branches: [main]
+
   pull_request:
+    paths:
+      - "go.mod"
+      - "**.go"
     branches: [main]
 
 jobs:
