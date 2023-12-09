@@ -1,3 +1,4 @@
 /.vscode
 /godns
-*.exe
+/*.exe
+/godns_*
