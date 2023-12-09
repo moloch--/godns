@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 	"strings"
 
 	"github.com/lmittmann/tint"
@@ -31,8 +32,9 @@ import (
 )
 
 const (
-	aRule = "a-rule"    // A rule
-	qRule = "aaaa-rule" // Quad A rule
+	aRule  = "a-rule"    // A rule
+	qRule  = "aaaa-rule" // Quad A rule
+	mxRule = "mx-rule"   // MX rule
 )
 
 func init() {
@@ -99,7 +101,12 @@ var rootCmd = &cobra.Command{
 		allRules := map[string][]*godns.ReplacementRule{}
 		allRules["A"] = parseARules(cmd)
 		allRules["AAAA"] = parseRulesFlag(cmd, qRule)
-		if len(allRules["A"]) == 0 && len(allRules["AAAA"]) == 0 {
+
+		countRules := 0
+		for _, rules := range allRules {
+			countRules += len(rules)
+		}
+		if countRules == 0 {
 			fmt.Println("Error: No rules specified")
 			os.Exit(1)
 		}
@@ -189,6 +196,20 @@ func startServer(config *godns.GodNSConfig, logger *slog.Logger) {
 		logger.Error(fmt.Sprintf("Error creating GodNS: %s", err.Error()))
 		os.Exit(1)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		logger.Info("Shutting down GodNS")
+		err := ns.Stop()
+		if err != nil {
+			logger.Error(fmt.Sprintf("Error shutting down GodNS: %s", err.Error()))
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}()
+
 	if err := ns.Start(); err != nil {
 		logger.Error(fmt.Sprintf("Error: %s", err.Error()))
 		os.Exit(1)
