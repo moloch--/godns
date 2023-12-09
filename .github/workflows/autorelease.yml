@@ -234,7 +234,7 @@ jobs:
 
       - name: Get Version
         id: tag-name
-        run: git describe --tags >> $GITHUB_OUTPUT
+        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: "Publish Release"
         uses: "bishopfox/action-gh-release@v1"
