@@ -5,14 +5,56 @@ on:
     branches: [main]
 
 jobs:
-  unix-builds:
-    name: Unix Builds
+  linux-builds:
+    name: Linux Builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch:
+          [
+            386,
+            amd64,
+            arm64,
+            mips,
+            mips64,
+            mips64le,
+            mipsle,
+            ppc64,
+            ppc64le,
+            riscv64,
+            s390x,
+          ]
+
+    steps:
+      - name: Go 1.21
+        uses: actions/setup-go@v4
+        with:
+          go-version: "^1.21"
+
+      - name: Check Out Code
+        uses: actions/checkout@v4
+
+      - name: Git Fetch Tags
+        run: git fetch --prune --unshallow --tags -f
+
+      - name: Go Build
+        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+      - name: Upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-builds
+          path: ./godns_*
+
+  bsd-builds:
+    name: BSD Builds
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       matrix:
-        goos: [linux, darwin, freebsd, openbsd, netbsd]
+        goos: [darwin, freebsd, openbsd, netbsd]
         goarch: [amd64, arm64]
 
     steps:
@@ -33,7 +75,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v3
         with:
-          name: unix-builds
+          name: bsd-builds
           path: ./godns_*
 
   ios-build:
@@ -124,7 +166,7 @@ jobs:
     strategy:
       matrix:
         goos: [windows]
-        goarch: [amd64, arm64]
+        goarch: [386, amd64, arm64]
 
     steps:
       - name: Go 1.21
@@ -148,7 +190,15 @@ jobs:
           path: ./godns_*
 
   tagged-release:
-    needs: [unix-builds, ios-build, android-build, other-builds, windows-builds]
+    needs:
+      [
+        linux-builds,
+        bsd-builds,
+        ios-build,
+        android-build,
+        other-builds,
+        windows-builds,
+      ]
 
     name: "Tagged Release"
     if: startsWith(github.ref, 'refs/tags/v')
