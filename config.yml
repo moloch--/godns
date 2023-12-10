@@ -1,0 +1,57 @@
+#
+# >>> Example GodNS Configure File
+#
+
+#
+# Server options
+#
+server:
+  # net: udp
+  # interface: 127.0.0.1
+  listen_port: 53
+
+#
+# Client options
+#
+client:
+  # net: udp
+  dial_timeout: 30s
+  read_timeout: 30s
+  write_timeout: 30s
+
+#
+# You can use this block to manually specify upstream dns resolvers.
+# If you do not specify anything the current system's resolvers will be used.
+#
+upstreams:
+  - 8.8.8.8
+  - 8.8.4.4
+
+#
+# Rules can be specified here, one block per record type:
+# For example: A, AAAA, NS, MX, TXT, CNAME
+#
+rules:
+
+  # The following are example rules, each rule must specify at least a 'match' and
+  # a 'spoof' value, but the rest are optional. By default rules are matched using
+  # glob patterns. However, if you set 'is_regexp' to true, then the match value
+  # will be treated as a regular expression. Rules are sorted using 'priority' in
+  # ascending order, so the order in which the matches are evaluated can be controlled.
+  # Two rules with the same priority will be evaluated in a random order.
+
+  # A:
+  #   - priority: 1
+  #     match: *.example.com
+  #     spoof: 127.0.0.1
+
+  #   - priority: 2
+  #     is_regexp: true
+  #     match: [a-z]+\.example\.com
+  #     spoof: 127.0.0.1
+
+  # MX:
+  #   - priority: 1
+  #     is_regexp: true
+  #     match: .*
+  #     spoof: example.com

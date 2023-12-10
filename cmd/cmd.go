@@ -62,7 +62,7 @@ func init() {
 	rootCmd.Flags().Uint16P("upstream-port", "p", 53, "Upstream server port, applied to all upstream hosts")
 
 	// Config File Flag
-	rootCmd.Flags().StringP("config", "y", "", "Config file path (json/yaml)")
+	rootCmd.Flags().StringP("config", "y", "", "Config file path (yaml/json)")
 
 	// Rule Flags
 	rootCmd.Flags().StringSliceP(aRule, "a", []string{}, "Replacement rule for A records (match|spoof)")
