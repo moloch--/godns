@@ -3,7 +3,7 @@ RUN mkdir /tmp/build \
     && apk add --no-cache git
 ADD . /tmp/build
 WORKDIR /tmp/build
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/godns .
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=docker" -o /tmp/godns .
 
 FROM scratch
 ADD config.yml /config.yml
