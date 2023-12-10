@@ -32,7 +32,6 @@ upstreams:
 # For example: A, AAAA, NS, MX, TXT, CNAME
 #
 rules:
-
   # The following are example rules, each rule must specify at least a 'match' and
   # a 'spoof' value, but the rest are optional. By default rules are matched using
   # glob patterns. However, if you set 'is_regexp' to true, then the match value
@@ -40,10 +39,10 @@ rules:
   # ascending order, so the order in which the matches are evaluated can be controlled.
   # Two rules with the same priority will be evaluated in a random order.
 
-  # A:
-  #   - priority: 1
-  #     match: *.example.com
-  #     spoof: 127.0.0.1
+  A:
+    - priority: 1
+      match: "*.example.com"
+      spoof: 127.0.0.1
 
   #   - priority: 2
   #     is_regexp: true
