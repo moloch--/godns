@@ -89,7 +89,8 @@ type ReplacementRule struct {
 	Priority int    `json:"priority" yaml:"priority"`
 	IsRegExp bool   `json:"is_regexp" yaml:"is_regexp"`
 	Match    string `json:"match" yaml:"match"`
-	Spoof    string `json:"spoof" yaml:"spoof"`
+
+	Spoof string `json:"spoof" yaml:"spoof"`
 
 	// Compiled regex
 	matchRegex *regexp.Regexp `json:"-" yaml:"-"`

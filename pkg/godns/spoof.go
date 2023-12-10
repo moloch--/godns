@@ -84,6 +84,36 @@ func (g *GodNS) spoofNS(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	}
 }
 
+func (g *GodNS) spoofCNAME(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           true,
+			Opcode:             req.Opcode,
+			Authoritative:      true,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: req.RecursionAvailable,
+			AuthenticatedData:  req.AuthenticatedData,
+			CheckingDisabled:   req.CheckingDisabled,
+			Rcode:              dns.RcodeSuccess,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+		Answer: []dns.RR{
+			&dns.CNAME{
+				Hdr: dns.RR_Header{
+					Name:   req.Question[0].Name,
+					Rrtype: dns.TypeCNAME,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				Target: rule.Spoof,
+			},
+		},
+	}
+}
+
 func (g *GodNS) spoofMX(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
