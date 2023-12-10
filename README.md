@@ -27,9 +27,9 @@ godns --rule-a "example.com|127.0.0.1" --rule-a "*.example.com|127.0.0.1"
 
 ### Advanced Usage
 
-For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type and priority. Configuration file entries also support regular expression matching in addition to glob matching.
+For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that contains a list of rules. Configuration file entries support regular expression matching in addition to glob matching. See the example configuration file in this repository for more details. Note that CLI flags override values in the config file if both are provided.
 
-### Support Platforms
+### Supported Platforms
 
 GodNS is a standalone statically compiled binary, and runs on nearly every operating system and CPU architecture:
 

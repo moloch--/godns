@@ -140,6 +140,7 @@ var rootCmd = &cobra.Command{
 			Rules:     map[string][]*godns.ReplacementRule{},
 		}
 
+		// Parse Config File
 		if cmd.Flags().Changed(configFlag) {
 			configFilePath, _ := cmd.Flags().GetString(configFlag)
 			if configFilePath != "" {
@@ -248,7 +249,7 @@ func parseLogFlags(cmd *cobra.Command) *slog.Logger {
 
 	// Initialize root logger
 	var logOutput io.Writer = os.Stderr
-	if logFile, _ := cmd.Flags().GetString("log-file"); logFile != "" {
+	if logFile, _ := cmd.Flags().GetString(logFileFlag); logFile != "" {
 		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		if err != nil {
 			fmt.Printf("Error opening log file '%s': %s\n", logFile, err.Error())
@@ -257,10 +258,10 @@ func parseLogFlags(cmd *cobra.Command) *slog.Logger {
 		logOutput = io.MultiWriter(os.Stderr, f)
 	}
 
-	if logJSON, _ := cmd.Flags().GetBool("log-json"); logJSON {
+	if logJSON, _ := cmd.Flags().GetBool(logJSONFlag); logJSON {
 		logger = slog.New(slog.NewJSONHandler(logOutput, opts))
 	} else {
-		if logPretty, _ := cmd.Flags().GetBool("log-pretty"); logPretty {
+		if logPretty, _ := cmd.Flags().GetBool(logPrettyFlag); logPretty {
 			logger = slog.New(tint.NewHandler(logOutput, &tint.Options{
 				NoColor: !isatty.IsTerminal(os.Stderr.Fd()),
 			}))
