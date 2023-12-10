@@ -1,0 +1,23 @@
+{
+  "server": {
+    "net": "tcp",
+    "interface": "127.0.0.1",
+    "listen_port": 31337
+  },
+  "client": {
+    "net": "tcp",
+    "dial_timeout": "1m",
+    "read_timeout": "1m",
+    "write_timeout": "1m"
+  },
+  "upstreams": ["8.8.8.8", "8.8.4.4"],
+  "rules": {
+    "A": [
+      { "priority": 1, "is_regexp": true, "match": ".*", "spoof": "127.0.0.1" },
+      { "priority": 2, "is_regexp": true, "match": ".*", "spoof": "127.0.0.1" }
+    ],
+    "MX": [
+      { "priority": 1, "is_regexp": true, "match": ".*", "spoof": "127.0.0.1" }
+    ]
+  }
+}
