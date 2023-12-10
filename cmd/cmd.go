@@ -20,6 +20,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -49,14 +50,16 @@ func init() {
 	rootCmd.Flags().StringP("write-timeout", "W", "30s", "Write timeout (duration)")
 
 	// Logging Flags
+	rootCmd.Flags().StringP("log-file", "f", "", "Log file path")
 	rootCmd.Flags().StringP("log-level", "l", "info", "Log level (debug/info/warn/error)")
 	rootCmd.Flags().BoolP("log-pretty", "y", true, "Log using pretty terminal colors")
+	rootCmd.Flags().BoolP("log-json", "j", false, "Log in json format")
 
 	// Upstream Flags
 	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server hosts")
 	rootCmd.Flags().Uint16P("upstream-port", "p", 53, "Upstream server port, applied to all upstream hosts")
 
-	// Config Flag
+	// Config File Flag
 	rootCmd.Flags().StringP("config", "c", "", "Config file path (json/yaml)")
 
 	// Rule Flags
@@ -186,12 +189,26 @@ func parseLogFlags(cmd *cobra.Command) *slog.Logger {
 	}
 
 	// Initialize root logger
-	if logPretty, _ := cmd.Flags().GetBool("log-pretty"); logPretty {
-		logger = slog.New(tint.NewHandler(os.Stderr, &tint.Options{
-			NoColor: !isatty.IsTerminal(os.Stderr.Fd()),
-		}))
+	var logOutput io.Writer = os.Stderr
+	if logFile, _ := cmd.Flags().GetString("log-file"); logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+		if err != nil {
+			fmt.Printf("Error opening log file '%s': %s\n", logFile, err.Error())
+			os.Exit(1)
+		}
+		logOutput = io.MultiWriter(os.Stderr, f)
+	}
+
+	if logJSON, _ := cmd.Flags().GetBool("log-json"); logJSON {
+		logger = slog.New(slog.NewJSONHandler(logOutput, opts))
 	} else {
-		logger = slog.New(slog.NewTextHandler(os.Stderr, opts))
+		if logPretty, _ := cmd.Flags().GetBool("log-pretty"); logPretty {
+			logger = slog.New(tint.NewHandler(logOutput, &tint.Options{
+				NoColor: !isatty.IsTerminal(os.Stderr.Fd()),
+			}))
+		} else {
+			logger = slog.New(slog.NewTextHandler(logOutput, opts))
+		}
 	}
 
 	slog.SetDefault(logger)
