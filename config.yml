@@ -38,6 +38,9 @@ rules:
   # will be treated as a regular expression. Rules are sorted using 'priority' in
   # ascending order, so the order in which the matches are evaluated can be controlled.
   # Two rules with the same priority will be evaluated in a random order.
+  # The source_ips field can be used to specify a list of IP addresses that are
+  # allowed to match the rule. If the list is empty, then the rule will be available
+  # to all clients.
 
   A:
     - priority: 1
@@ -48,6 +51,8 @@ rules:
   #     is_regexp: true
   #     match: [a-z]+\.example\.com
   #     spoof: 127.0.0.1
+  #     source_ips:
+  #       - 127.0.0.1
 
   # MX:
   #   - priority: 1
