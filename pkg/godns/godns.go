@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gobwas/glob"
 	"github.com/miekg/dns"
 )
 
@@ -211,12 +212,11 @@ func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
 					return rule, true
 				}
 			} else {
-				// Basic match
-				if rule.Match == "*" {
-					return rule, true
+				if rule.matchGlob == nil {
+					continue
 				}
 				qName := strings.ToLower(strings.TrimSuffix(req.Question[0].Name, "."))
-				if qName == rule.Match {
+				if rule.matchGlob.Match(qName) {
 					return rule, true
 				}
 			}
@@ -254,8 +254,9 @@ type ReplacementRule struct {
 
 	Spoof string `json:"spoof" yaml:"spoof"`
 
-	// Compiled regex
+	// Compiled pattern matches
 	matchRegex *regexp.Regexp `json:"-" yaml:"-"`
+	matchGlob  glob.Glob      `json:"-" yaml:"-"`
 }
 
 // NewGodNS - Create a new GodNS instance
@@ -352,15 +353,19 @@ func NewGodNS(config *GodNSConfig, logger *slog.Logger) (*GodNS, error) {
 func CompileRules(allRules map[string][]*ReplacementRule) error {
 	for ruleType := range allRules {
 		for _, rule := range allRules[ruleType] {
-			if !rule.IsRegExp {
-				rule.Match = strings.ToLower(strings.TrimSuffix(rule.Match, "."))
-				continue
+			if rule.IsRegExp {
+				regex, err := regexp.Compile(rule.Match)
+				if err != nil {
+					return err
+				}
+				rule.matchRegex = regex
+			} else {
+				globMatch, err := glob.Compile(strings.ToLower(strings.TrimSuffix(rule.Match, ".")))
+				if err != nil {
+					return err
+				}
+				rule.matchGlob = globMatch
 			}
-			regex, err := regexp.Compile(rule.Match)
-			if err != nil {
-				return err
-			}
-			rule.matchRegex = regex
 		}
 		sort.Slice(allRules[ruleType], func(i, j int) bool {
 			return allRules[ruleType][i].Priority < allRules[ruleType][j].Priority
