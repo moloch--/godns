@@ -100,7 +100,7 @@ multiple records for a single domain.
 
 var rootCmd = &cobra.Command{
 	Use:   "godns",
-	Short: "The God Name Server",
+	Short: "God Name Server",
 	Long:  rootLongHelp,
 	Run: func(cmd *cobra.Command, args []string) {
 		host, _ := cmd.Flags().GetString("interface")

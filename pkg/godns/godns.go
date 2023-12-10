@@ -85,17 +85,6 @@ var (
 	}
 )
 
-type ReplacementRule struct {
-	Priority int    `json:"priority" yaml:"priority"`
-	IsRegExp bool   `json:"is_regexp" yaml:"is_regexp"`
-	Match    string `json:"match" yaml:"match"`
-
-	Spoof string `json:"spoof" yaml:"spoof"`
-
-	// Compiled regex
-	matchRegex *regexp.Regexp `json:"-" yaml:"-"`
-}
-
 type GodNS struct {
 	server       *dns.Server
 	serverConfig *GodNSConfig
@@ -247,7 +236,7 @@ type GodNSConfig struct {
 
 type ServerConfig struct {
 	Net        string `json:"net" yaml:"net"`
-	Host       string `json:"host" yaml:"host"`
+	Host       string `json:"interface" yaml:"interface"`
 	ListenPort uint16 `json:"listen_port" yaml:"listen_port"`
 }
 
@@ -256,6 +245,17 @@ type ClientConfig struct {
 	DialTimeout  string `json:"dial_timeout" yaml:"dial_timeout"`
 	ReadTimeout  string `json:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout string `json:"write_timeout" yaml:"write_timeout"`
+}
+
+type ReplacementRule struct {
+	Priority int    `json:"priority" yaml:"priority"`
+	IsRegExp bool   `json:"is_regexp" yaml:"is_regexp"`
+	Match    string `json:"match" yaml:"match"`
+
+	Spoof string `json:"spoof" yaml:"spoof"`
+
+	// Compiled regex
+	matchRegex *regexp.Regexp `json:"-" yaml:"-"`
 }
 
 // NewGodNS - Create a new GodNS instance

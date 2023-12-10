@@ -28,7 +28,7 @@ import (
 
 var licenseCmd = &cobra.Command{
 	Use:   "license",
-	Short: "Prints out the godns license",
+	Short: "Show godns license",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf(`
 God Name Server (godns)
