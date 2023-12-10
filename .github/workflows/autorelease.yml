@@ -47,7 +47,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -82,7 +82,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -112,7 +112,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: Go Build
-        run: CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_ios-arm64 .
+        run: CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_ios-arm64 .
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -142,7 +142,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_android-arm64 .
+        run: CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_android-arm64 .
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -177,7 +177,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
       - name: Upload
         uses: actions/upload-artifact@v3
@@ -212,7 +212,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w "-X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe .
+        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe .
 
       - name: Upload
         uses: actions/upload-artifact@v3
