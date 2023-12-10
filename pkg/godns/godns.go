@@ -187,6 +187,12 @@ func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
 	case dns.TypeNS:
 		g.Log.Info(fmt.Sprintf("Spoofing NS record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofNS(rule, req)
+	case dns.TypeCNAME:
+		g.Log.Info(fmt.Sprintf("Spoofing CNAME record for %s to %s", req.Question[0].Name, rule.Spoof))
+		return g.spoofCNAME(rule, req)
+	case dns.TypeMX:
+		g.Log.Info(fmt.Sprintf("Spoofing MX record for %s to %s", req.Question[0].Name, rule.Spoof))
+		return g.spoofMX(rule, req)
 	case dns.TypeAAAA:
 		g.Log.Info(fmt.Sprintf("Spoofing AAAA record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofAAAA(rule, req)

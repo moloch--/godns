@@ -6,26 +6,27 @@ A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malw
 
 ### Basic Usage
 
-Basic rules can be passed via the command line, basic rules simply match a domain name for a record type
-and spoof the response using the provided value. For example, to spoof all `A` records for various domains:
+Basic rules can be passed via the command line and use glob matching for the domain name spoof the response using the provided value. For example, to spoof all A records for various domains:
 
 ```bash
 godns --rule-a "microsoft.com|127.0.0.1" --rule-a "google.com|127.0.0.1"
 ```
 
-One special case is allowed for the command line, if the value is set to `*` then all records are spoofed for
-associated record type. For example, to spoof all `A` and `AAAA` records for all domains:
+You can leverage the glob matching to replace all A records for all domains:
 
 ```bash
-godns --rule-a "*|127.0.0.1" --rule-aaaa "*|::1"
+godns --rule-a "*|127.0.0.1"
+```
+
+Replace a domain and all subdomain A records:
+
+```bash
+godns --rule-a "example.com|127.0.0.1" --rule-a "*.example.com|127.0.0.1"
 ```
 
 ### Advanced Usage
 
-For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that
-contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type
-and priority. Configuration file also allow for regular expression matching, and can be used to spoof
-multiple records for a single domain.
+For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type and priority. Configuration file entries also support regular expression matching in addition to glob matching.
 
 ### Support Platforms
 

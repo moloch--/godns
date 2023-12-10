@@ -82,20 +82,22 @@ A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malw
 It allows the selective replacement of specific DNS records for arbitrary domains with custom values,
 and can be used to direct traffic to a different host.
 
-Basic rules can be passed via the command line, basic rules simply match a domain name and record type
-and spoof the response using the provided value. For example, to spoof all A records for various domains:
+Basic rules can be passed via the command line and use glob matching for the domain name spoof the 
+response using the provided value. For example, to spoof all A records for various domains:
 	
 	godns --rule-a "microsoft.com|127.0.0.1" --rule-a "google.com|127.0.0.1"
 
-The command line also allows a global wild card match '*' to match all domains. For example, to spoof
-all A records for all domains:
+You can leverage the glob matching to replace all A records:
 
 	godns --rule-a "*|127.0.0.1"
 
+Replace a domain and all subdomain records:
+
+	godns --rule-a "example.com|127.0.0.1" --rule-a "*.example.com|127.0.0.1"
+
 For more advanced usage, a config file can be provided. The config file is a JSON or YAML file that
 contains a list of rules. Each rule has a match and spoof value, and can optionally specify a record type
-and priority. Configuration file also allow for regular expression matching, and can be used to spoof
-multiple records for a single domain.
+and priority. Configuration file entries also support regular expression matching in addition to glob matching.
 `
 
 var rootCmd = &cobra.Command{
