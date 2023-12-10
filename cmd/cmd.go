@@ -121,15 +121,6 @@ var rootCmd = &cobra.Command{
 		allRules["TXT"] = parseRulesFlag(cmd, txtRule)
 		allRules["AAAA"] = parseRulesFlag(cmd, qRule)
 
-		countRules := 0
-		for _, rules := range allRules {
-			countRules += len(rules)
-		}
-		if countRules == 0 {
-			fmt.Println("Error: No rules specified")
-			os.Exit(1)
-		}
-
 		// Parse log flags
 		logger := parseLogFlags(cmd)
 
@@ -224,6 +215,14 @@ func parseLogFlags(cmd *cobra.Command) *slog.Logger {
 func startServer(config *godns.GodNSConfig, logger *slog.Logger) {
 	logger.Info(fmt.Sprintf("Starting GodNS %s (%s:%d)", FullVersion, config.Server.Host, config.Server.ListenPort))
 
+	countRules := 0
+	for _, rules := range config.Rules {
+		countRules += len(rules)
+	}
+	if countRules == 0 {
+		logger.Warn("No rules specified, GodNS will act as a passthrough DNS server only")
+	}
+
 	ns, err := godns.NewGodNS(config, logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Error creating GodNS: %s", err.Error()))
@@ -233,8 +232,8 @@ func startServer(config *godns.GodNSConfig, logger *slog.Logger) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		<-c
-		logger.Info("Shutting down GodNS")
+		sig := <-c
+		logger.Info(fmt.Sprintf("Shutting down GodNS: %s", sig))
 		err := ns.Stop()
 		if err != nil {
 			logger.Error(fmt.Sprintf("Error shutting down GodNS: %s", err.Error()))
