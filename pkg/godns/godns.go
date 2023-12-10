@@ -150,10 +150,11 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	// the channel. If we don't replace the response then we wait for the upstream
 	go func(msg *dns.Msg) {
 		started := time.Now()
-		replaceMsg := g.evalReplacement(msg, writer.RemoteAddr().String())
-		if replaceMsg != nil {
+		spoofMsg := g.evalReplacement(msg, writer.RemoteAddr().String())
+		if spoofMsg != nil {
 			rtt := time.Since(started)
-			resultChan <- godNSResult{Msg: replaceMsg, Rtt: rtt, Err: nil}
+			resultChan <- godNSResult{Msg: spoofMsg, Rtt: rtt, Err: nil}
+			return
 		}
 		upstreamWg.Wait() // Only wait for upstream if we're not replacing the response
 		resultChan <- <-upstreamResult
@@ -234,6 +235,7 @@ func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
 					return rule, true
 				}
 			} else {
+				// Glob match
 				if rule.matchGlob == nil {
 					continue
 				}
