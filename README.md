@@ -1,25 +1,25 @@
 # GodNS
 
-A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts, inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host. GodNS can spoof A, AAAA, CNAME, MX, NS, and TXT records.
+A fast and configurable attacker-in-the-middle DNS proxy for penetration testers, reverse engineers, and malware analysts inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host. GodNS can spoof `A`, `AAAA`, `CNAME`, `MX`, `NS`, and `TXT` records.
 
 [![Build Check](https://github.com/moloch--/godns/actions/workflows/build-check.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/build-check.yml)
 [![Unit Tests](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml)
 
 ### Basic Usage
 
-Basic rules can be passed via the command line and use glob matching for the domain name spoof the response using the provided value. For example, to spoof all A records for various domains:
+Basic rules can be passed via the command line and use glob matching for the domain name spoof the response using the provided value. For example, to spoof `A` records for various domains:
 
 ```bash
 godns --rule-a "microsoft.com|127.0.0.1" --rule-a "google.com|127.0.0.1"
 ```
 
-You can leverage the glob matching to replace all A records for all domains:
+You can leverage the glob matching to replace all `A` records for all domains:
 
 ```bash
 godns --rule-a "*|127.0.0.1"
 ```
 
-Replace a domain and all subdomain A records:
+Replace a domain and all subdomain `A` records:
 
 ```bash
 godns --rule-a "example.com|127.0.0.1" --rule-a "*.example.com|127.0.0.1"
