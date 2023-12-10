@@ -3,6 +3,7 @@
 A configurable attacker-in-the-middle DNS proxy for Penetration Testers and Malware Analysts, inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host. GodNS can spoof A, AAAA, CNAME, MX, NS, and TXT records.
 
 [![Build Check](https://github.com/moloch--/godns/actions/workflows/build-check.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/build-check.yml)
+[![Unit Tests](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml)
 
 ### Basic Usage
 

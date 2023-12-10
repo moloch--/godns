@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/lmittmann/tint"
 	"github.com/mattn/go-isatty"
@@ -230,7 +231,7 @@ func startServer(config *godns.GodNSConfig, logger *slog.Logger) {
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-c
 		logger.Info("Shutting down GodNS")
