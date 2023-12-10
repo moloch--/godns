@@ -148,7 +148,7 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	// the channel. If we don't replace the response then we wait for the upstream
 	go func(msg *dns.Msg) {
 		started := time.Now()
-		replaceMsg := g.replacement(msg)
+		replaceMsg := g.evalReplacement(msg)
 		if replaceMsg != nil {
 			rtt := time.Since(started)
 			resultChan <- godNSResult{Msg: replaceMsg, Rtt: rtt, Err: nil}
@@ -173,7 +173,7 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	}
 }
 
-func (g *GodNS) replacement(req *dns.Msg) *dns.Msg {
+func (g *GodNS) evalReplacement(req *dns.Msg) *dns.Msg {
 	var ok bool
 	var rule *ReplacementRule
 	if rule, ok = g.matchReplacement(req); !ok {
