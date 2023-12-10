@@ -4,6 +4,11 @@ A fast and configurable attacker-in-the-middle DNS proxy for penetration testers
 
 [![Build Check](https://github.com/moloch--/godns/actions/workflows/build-check.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/build-check.yml)
 [![Unit Tests](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml)
+[![Release](https://github.com/moloch--/godns/actions/workflows/autorelease.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/autorelease.yml)
+
+### Download
+
+Download the [latest release for your platform](https://github.com/moloch--/godns/releases/latest).
 
 ### Basic Usage
 
