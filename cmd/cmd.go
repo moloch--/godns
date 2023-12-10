@@ -34,43 +34,60 @@ import (
 )
 
 const (
-	aRule     = "rule-a"     // A rule
-	qRule     = "rule-aaaa"  // Quad A rule
-	mxRule    = "rule-mx"    // MX rule
-	nsRule    = "rule-ns"    // NS rule
-	txtRule   = "rule-txt"   // TXT rule
-	cnameRule = "rule-cname" // CNAME rule
+	interfaceFlag    = "interface"
+	portFlag         = "port"
+	netFlag          = "net"
+	dialTimeoutFlag  = "dial-timeout"
+	readTimeoutFlag  = "read-timeout"
+	writeTimeoutFlag = "write-timeout"
+
+	logFileFlag   = "log-file"
+	logLevelFlag  = "log-level"
+	logPrettyFlag = "log-pretty"
+	logJSONFlag   = "log-json"
+
+	upstreamFlag     = "upstream"
+	upstreamPortFlag = "upstream-port"
+
+	configFlag = "config"
+
+	aRuleFlag     = "rule-a"     // A rule
+	qRuleFlag     = "rule-aaaa"  // Quad A rule
+	mxRuleFlag    = "rule-mx"    // MX rule
+	nsRuleFlag    = "rule-ns"    // NS rule
+	txtRuleFlag   = "rule-txt"   // TXT rule
+	cnameRuleFlag = "rule-cname" // CNAME rule
 )
 
 func init() {
 	// Server Flags
-	rootCmd.Flags().StringP("interface", "I", "", "Interface to listen on")
-	rootCmd.Flags().Uint16P("port", "P", 53, "Port to listen on")
-	rootCmd.Flags().StringP("net", "N", "udp", "Network to listen on (tcp/udp)")
-	rootCmd.Flags().StringP("dial-timeout", "D", "30s", "Dial timeout (duration)")
-	rootCmd.Flags().StringP("read-timeout", "R", "30s", "Read timeout (duration)")
-	rootCmd.Flags().StringP("write-timeout", "W", "30s", "Write timeout (duration)")
+	rootCmd.Flags().StringP(interfaceFlag, "I", "", "Interface to listen on")
+	rootCmd.Flags().Uint16P(portFlag, "P", 53, "Port to listen on")
+	rootCmd.Flags().StringP(netFlag, "N", "udp", "Network to listen on (tcp/udp)")
+	rootCmd.Flags().StringP(dialTimeoutFlag, "D", "30s", "Dial timeout (duration)")
+	rootCmd.Flags().StringP(readTimeoutFlag, "R", "30s", "Read timeout (duration)")
+	rootCmd.Flags().StringP(writeTimeoutFlag, "W", "30s", "Write timeout (duration)")
 
 	// Logging Flags
-	rootCmd.Flags().StringP("log-file", "f", "", "Log file path")
-	rootCmd.Flags().StringP("log-level", "l", "info", "Log level (debug/info/warn/error)")
-	rootCmd.Flags().BoolP("log-pretty", "z", true, "Log using pretty terminal colors")
-	rootCmd.Flags().BoolP("log-json", "j", false, "Log in json format")
+	rootCmd.Flags().StringP(logFileFlag, "f", "", "Log file path")
+	rootCmd.Flags().StringP(logLevelFlag, "l", "info", "Log level (debug/info/warn/error)")
+	rootCmd.Flags().BoolP(logPrettyFlag, "z", true, "Log using pretty terminal colors")
+	rootCmd.Flags().BoolP(logJSONFlag, "j", false, "Log in json format")
 
 	// Upstream Flags
-	rootCmd.Flags().StringSliceP("upstream", "u", []string{}, "Upstream DNS server hosts")
-	rootCmd.Flags().Uint16P("upstream-port", "p", 53, "Upstream server port, applied to all upstream hosts")
+	rootCmd.Flags().StringSliceP(upstreamFlag, "u", []string{}, "Upstream DNS server hosts")
+	rootCmd.Flags().Uint16P(upstreamPortFlag, "p", 53, "Upstream server port, applied to all upstream hosts")
 
 	// Config File Flag
-	rootCmd.Flags().StringP("config", "y", "", "Config file path (yaml/json)")
+	rootCmd.Flags().StringP(configFlag, "y", "", "Config file path (yaml/json)")
 
 	// Rule Flags
-	rootCmd.Flags().StringSliceP(aRule, "a", []string{}, "Replacement rule for A records (match|spoof)")
-	rootCmd.Flags().StringSliceP(qRule, "q", []string{}, "Replacement rule for AAAA records (match|spoof)")
-	rootCmd.Flags().StringSliceP(mxRule, "m", []string{}, "Replacement rule for MX records (match|spoof)")
-	rootCmd.Flags().StringSliceP(nsRule, "n", []string{}, "Replacement rule for NS records (match|spoof)")
-	rootCmd.Flags().StringSliceP(txtRule, "t", []string{}, "Replacement rule for TXT records (match|spoof)")
-	rootCmd.Flags().StringSliceP(cnameRule, "c", []string{}, "Replacement rule for CNAME records (match|spoof)")
+	rootCmd.Flags().StringSliceP(aRuleFlag, "a", []string{}, "Replacement rule for A records (match|spoof)")
+	rootCmd.Flags().StringSliceP(qRuleFlag, "q", []string{}, "Replacement rule for AAAA records (match|spoof)")
+	rootCmd.Flags().StringSliceP(mxRuleFlag, "m", []string{}, "Replacement rule for MX records (match|spoof)")
+	rootCmd.Flags().StringSliceP(nsRuleFlag, "n", []string{}, "Replacement rule for NS records (match|spoof)")
+	rootCmd.Flags().StringSliceP(txtRuleFlag, "t", []string{}, "Replacement rule for TXT records (match|spoof)")
+	rootCmd.Flags().StringSliceP(cnameRuleFlag, "c", []string{}, "Replacement rule for CNAME records (match|spoof)")
 
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(licenseCmd)
@@ -106,45 +123,89 @@ var rootCmd = &cobra.Command{
 	Short: "God Name Server",
 	Long:  rootLongHelp,
 	Run: func(cmd *cobra.Command, args []string) {
-		host, _ := cmd.Flags().GetString("interface")
-		port, _ := cmd.Flags().GetUint16("port")
-		dialTimeout, _ := cmd.Flags().GetString("dial-timeout")
-		readTimeout, _ := cmd.Flags().GetString("read-timeout")
-		writeTimeout, _ := cmd.Flags().GetString("write-timeout")
+		// Defaults
+		config := &godns.GodNSConfig{
+			Server: &godns.ServerConfig{
+				Net:        "udp",
+				Host:       "",
+				ListenPort: 53,
+			},
+			Client: &godns.ClientConfig{
+				Net:          "udp",
+				DialTimeout:  "30s",
+				ReadTimeout:  "30s",
+				WriteTimeout: "30s",
+			},
+			Upstreams: []string{},
+			Rules:     map[string][]*godns.ReplacementRule{},
+		}
 
-		// Parse rule flags, if any
-		allRules := map[string][]*godns.ReplacementRule{}
-		allRules["A"] = parseARules(cmd)
-		allRules["NS"] = parseRulesFlag(cmd, nsRule)
-		allRules["CNAME"] = parseRulesFlag(cmd, cnameRule)
-		allRules["MX"] = parseRulesFlag(cmd, mxRule)
-		allRules["TXT"] = parseRulesFlag(cmd, txtRule)
-		allRules["AAAA"] = parseRulesFlag(cmd, qRule)
+		if cmd.Flags().Changed(configFlag) {
+			configFilePath, _ := cmd.Flags().GetString(configFlag)
+			if configFilePath != "" {
+				var err error
+				config, err = godns.ParseConfigFile(configFilePath)
+				if err != nil {
+					fmt.Printf("Error loading config file '%s': %s\n", configFilePath, err.Error())
+					os.Exit(1)
+				}
+			}
+		}
+
+		// Server Flags
+		if cmd.Flags().Changed(interfaceFlag) {
+			config.Server.Host, _ = cmd.Flags().GetString(interfaceFlag)
+		}
+		if cmd.Flags().Changed(portFlag) {
+			config.Server.ListenPort, _ = cmd.Flags().GetUint16(portFlag)
+		}
+		if cmd.Flags().Changed(netFlag) {
+			config.Server.Net, _ = cmd.Flags().GetString(netFlag)
+		}
+		// Client Flags
+		if cmd.Flags().Changed(dialTimeoutFlag) {
+			config.Client.DialTimeout, _ = cmd.Flags().GetString(dialTimeoutFlag)
+		}
+		if cmd.Flags().Changed(readTimeoutFlag) {
+			config.Client.ReadTimeout, _ = cmd.Flags().GetString(readTimeoutFlag)
+		}
+		if cmd.Flags().Changed(writeTimeoutFlag) {
+			config.Client.WriteTimeout, _ = cmd.Flags().GetString(writeTimeoutFlag)
+		}
+
+		// Parse rule flags
+		if cmd.Flags().Changed(aRuleFlag) {
+			config.Rules["A"] = parseARules(cmd)
+		}
+		if cmd.Flags().Changed(nsRuleFlag) {
+			config.Rules["NS"] = parseRulesFlag(cmd, nsRuleFlag)
+		}
+		if cmd.Flags().Changed(cnameRuleFlag) {
+			config.Rules["CNAME"] = parseRulesFlag(cmd, cnameRuleFlag)
+		}
+		if cmd.Flags().Changed(mxRuleFlag) {
+			config.Rules["MX"] = parseRulesFlag(cmd, mxRuleFlag)
+		}
+		if cmd.Flags().Changed(txtRuleFlag) {
+			config.Rules["TXT"] = parseRulesFlag(cmd, txtRuleFlag)
+		}
+		if cmd.Flags().Changed(qRuleFlag) {
+			config.Rules["AAAA"] = parseRulesFlag(cmd, qRuleFlag)
+		}
 
 		// Parse log flags
 		logger := parseLogFlags(cmd)
 
-		startServer(&godns.GodNSConfig{
-			Rules: allRules,
-			Server: &godns.ServerConfig{
-				Host:       host,
-				ListenPort: port,
-			},
-			Client: &godns.ClientConfig{
-				DialTimeout:  dialTimeout,
-				ReadTimeout:  readTimeout,
-				WriteTimeout: writeTimeout,
-			},
-		}, logger)
+		startServer(config, logger)
 	},
 }
 
 func parseARules(cmd *cobra.Command) []*godns.ReplacementRule {
-	return parseRulesFlag(cmd, aRule)
+	return parseRulesFlag(cmd, aRuleFlag)
 }
 
 func parseQRules(cmd *cobra.Command) []*godns.ReplacementRule {
-	return parseRulesFlag(cmd, qRule)
+	return parseRulesFlag(cmd, qRuleFlag)
 }
 
 func parseRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
