@@ -21,6 +21,8 @@ rules:
       is_regexp: true
       match: .*
       spoof: 127.0.0.1
+      source_ips:
+        - 127.0.0.1
 
     - priority: 2
       is_regexp: true

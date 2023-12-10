@@ -80,6 +80,9 @@ func TestYaml1(t *testing.T) {
 		if aRules[0].Spoof != "127.0.0.1" {
 			t.Errorf("config rules should have an A entry with spoof, got %s", aRules[0].Spoof)
 		}
+		if len(aRules[0].SourceIPs) != 1 {
+			t.Errorf("config rules should have an A entry with source_ips, got %v", aRules[0].SourceIPs)
+		}
 	} else {
 		t.Errorf("config rules should have an A entry")
 	}

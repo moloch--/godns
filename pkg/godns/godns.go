@@ -24,6 +24,7 @@ import (
 	"log/slog"
 	insecureRand "math/rand"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -86,6 +87,7 @@ var (
 	}
 )
 
+// GodNS - The God Name Server
 type GodNS struct {
 	server       *dns.Server
 	serverConfig *GodNSConfig
@@ -148,7 +150,7 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	// the channel. If we don't replace the response then we wait for the upstream
 	go func(msg *dns.Msg) {
 		started := time.Now()
-		replaceMsg := g.evalReplacement(msg)
+		replaceMsg := g.evalReplacement(msg, writer.RemoteAddr().String())
 		if replaceMsg != nil {
 			rtt := time.Since(started)
 			resultChan <- godNSResult{Msg: replaceMsg, Rtt: rtt, Err: nil}
@@ -173,11 +175,22 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 	}
 }
 
-func (g *GodNS) evalReplacement(req *dns.Msg) *dns.Msg {
+func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 	var ok bool
 	var rule *ReplacementRule
 	if rule, ok = g.matchReplacement(req); !ok {
 		return nil
+	}
+	if rule.SourceIPs != nil && len(rule.SourceIPs) > 0 {
+		// Check if the source IP is in the list of allowed IPs
+		// If it's not, then we don't replace the response
+		if !slices.Contains[[]string](rule.SourceIPs, remoteAddr) {
+			g.Log.Info(fmt.Sprintf("Skipping spoofed DNS response for %s, source IP %s not in allowed list",
+				req.Question[0].Name,
+				remoteAddr,
+			))
+			return nil
+		}
 	}
 
 	switch req.Question[0].Qtype {
@@ -257,9 +270,10 @@ type ClientConfig struct {
 }
 
 type ReplacementRule struct {
-	Priority int    `json:"priority" yaml:"priority"`
-	IsRegExp bool   `json:"is_regexp" yaml:"is_regexp"`
-	Match    string `json:"match" yaml:"match"`
+	Priority  int      `json:"priority" yaml:"priority"`
+	IsRegExp  bool     `json:"is_regexp" yaml:"is_regexp"`
+	Match     string   `json:"match" yaml:"match"`
+	SourceIPs []string `json:"source_ips" yaml:"source_ips"`
 
 	Spoof string `json:"spoof" yaml:"spoof"`
 
