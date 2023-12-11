@@ -118,6 +118,72 @@ func (g *GodNS) spoofCNAME(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	}
 }
 
+// func (g *GodNS) spoofSOA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+// 	return &dns.Msg{
+// 		MsgHdr: dns.MsgHdr{
+// 			Id:                 req.Id,
+// 			Response:           true,
+// 			Opcode:             req.Opcode,
+// 			Authoritative:      true,
+// 			Truncated:          req.Truncated,
+// 			RecursionDesired:   req.RecursionDesired,
+// 			RecursionAvailable: req.RecursionAvailable,
+// 			AuthenticatedData:  req.AuthenticatedData,
+// 			CheckingDisabled:   req.CheckingDisabled,
+// 			Rcode:              dns.RcodeSuccess,
+// 		},
+// 		Compress: req.Compress,
+// 		Question: req.Question,
+// 		Answer: []dns.RR{
+// 			&dns.SOA{
+// 				Hdr: dns.RR_Header{
+// 					Name:   req.Question[0].Name,
+// 					Rrtype: dns.TypeSOA,
+// 					Class:  dns.ClassINET,
+// 					Ttl:    0,
+// 				},
+// 				Ns:      rule.Spoof,
+// 				Mbox:    rule.Spoof,
+// 				Serial:  1,
+// 				Refresh: 1,
+// 				Retry:   1,
+// 				Expire:  1,
+// 				Minttl:  1,
+// 			},
+// 		},
+// 	}
+// }
+
+func (g *GodNS) spoofPTR(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           true,
+			Opcode:             req.Opcode,
+			Authoritative:      true,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: req.RecursionAvailable,
+			AuthenticatedData:  req.AuthenticatedData,
+			CheckingDisabled:   req.CheckingDisabled,
+			Rcode:              dns.RcodeSuccess,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+		Answer: []dns.RR{
+			&dns.PTR{
+				Hdr: dns.RR_Header{
+					Name:   req.Question[0].Name,
+					Rrtype: dns.TypePTR,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				Ptr: rule.Spoof,
+			},
+		},
+	}
+}
+
 func (g *GodNS) spoofMX(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{

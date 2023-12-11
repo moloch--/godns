@@ -204,6 +204,9 @@ func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 	case dns.TypeCNAME:
 		g.Log.Info(fmt.Sprintf("Spoofing CNAME record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofCNAME(rule, req)
+	case dns.TypePTR:
+		g.Log.Info(fmt.Sprintf("Spoofing PTR record for %s to %s", req.Question[0].Name, rule.Spoof))
+		return g.spoofPTR(rule, req)
 	case dns.TypeTXT:
 		g.Log.Info(fmt.Sprintf("Spoofing TXT record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofTXT(rule, req)

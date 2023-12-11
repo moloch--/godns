@@ -57,6 +57,7 @@ const (
 	nsRuleFlag    = "rule-ns"    // NS rule
 	txtRuleFlag   = "rule-txt"   // TXT rule
 	cnameRuleFlag = "rule-cname" // CNAME rule
+	ptrRuleFlag   = "rule-ptr"   // PTR rule
 )
 
 func init() {
@@ -183,6 +184,9 @@ var rootCmd = &cobra.Command{
 		}
 		if cmd.Flags().Changed(cnameRuleFlag) {
 			config.Rules["CNAME"] = parseRulesFlag(cmd, cnameRuleFlag)
+		}
+		if cmd.Flags().Changed(ptrRuleFlag) {
+			config.Rules["PTR"] = parseRulesFlag(cmd, ptrRuleFlag)
 		}
 		if cmd.Flags().Changed(mxRuleFlag) {
 			config.Rules["MX"] = parseRulesFlag(cmd, mxRuleFlag)
