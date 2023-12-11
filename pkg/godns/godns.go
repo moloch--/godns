@@ -117,11 +117,11 @@ type godNSResult struct {
 
 // HandleDNSRequest - Handle a DNS request
 func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
-	msg := &dns.Msg{}
-	msg.SetReply(req)
 
 	// Check if we have a valid question
 	if len(req.Question) == 0 {
+		msg := &dns.Msg{}
+		msg.SetReply(req)
 		msg.SetRcode(req, dns.RcodeFormatError)
 		writer.WriteMsg(msg)
 		return

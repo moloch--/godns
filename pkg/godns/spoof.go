@@ -19,12 +19,16 @@ package godns
 */
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/miekg/dns"
 )
 
 func (g *GodNS) spoofA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	if net.ParseIP(rule.Spoof).To4() == nil {
+		g.Log.Warn(fmt.Sprintf("A rule contains invalid IPv4 address: %s", rule.Spoof))
+	}
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:                 req.Id,
@@ -176,6 +180,9 @@ func (g *GodNS) spoofTXT(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 }
 
 func (g *GodNS) spoofAAAA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	if net.ParseIP(rule.Spoof).To16() == nil {
+		g.Log.Warn(fmt.Sprintf("AAAA rule contains invalid IPv6 address: %s", rule.Spoof))
+	}
 	return &dns.Msg{
 		MsgHdr: dns.MsgHdr{
 			Id:                 req.Id,
