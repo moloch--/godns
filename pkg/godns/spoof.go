@@ -118,41 +118,41 @@ func (g *GodNS) spoofCNAME(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	}
 }
 
-// func (g *GodNS) spoofSOA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
-// 	return &dns.Msg{
-// 		MsgHdr: dns.MsgHdr{
-// 			Id:                 req.Id,
-// 			Response:           true,
-// 			Opcode:             req.Opcode,
-// 			Authoritative:      true,
-// 			Truncated:          req.Truncated,
-// 			RecursionDesired:   req.RecursionDesired,
-// 			RecursionAvailable: req.RecursionAvailable,
-// 			AuthenticatedData:  req.AuthenticatedData,
-// 			CheckingDisabled:   req.CheckingDisabled,
-// 			Rcode:              dns.RcodeSuccess,
-// 		},
-// 		Compress: req.Compress,
-// 		Question: req.Question,
-// 		Answer: []dns.RR{
-// 			&dns.SOA{
-// 				Hdr: dns.RR_Header{
-// 					Name:   req.Question[0].Name,
-// 					Rrtype: dns.TypeSOA,
-// 					Class:  dns.ClassINET,
-// 					Ttl:    0,
-// 				},
-// 				Ns:      rule.Spoof,
-// 				Mbox:    rule.Spoof,
-// 				Serial:  1,
-// 				Refresh: 1,
-// 				Retry:   1,
-// 				Expire:  1,
-// 				Minttl:  1,
-// 			},
-// 		},
-// 	}
-// }
+func (g *GodNS) spoofSOA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           true,
+			Opcode:             req.Opcode,
+			Authoritative:      true,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: req.RecursionAvailable,
+			AuthenticatedData:  req.AuthenticatedData,
+			CheckingDisabled:   req.CheckingDisabled,
+			Rcode:              dns.RcodeSuccess,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+		Answer: []dns.RR{
+			&dns.SOA{
+				Hdr: dns.RR_Header{
+					Name:   req.Question[0].Name,
+					Rrtype: dns.TypeSOA,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				Ns:      rule.SpoofMName,
+				Mbox:    rule.SpoofRName,
+				Serial:  rule.SpoofSerial,
+				Refresh: rule.SpoofRefresh,
+				Retry:   rule.SpoofRetry,
+				Expire:  rule.SpoofExpire,
+				Minttl:  rule.SpoofMinTTL,
+			},
+		},
+	}
+}
 
 func (g *GodNS) spoofPTR(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	return &dns.Msg{
@@ -277,4 +277,46 @@ func (g *GodNS) spoofAAAA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 		},
 	}
 
+}
+
+func (g *GodNS) spoofSRV(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	if rule.SpoofPriority == 0 {
+		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof port: %d", rule.SpoofPort))
+	}
+	if rule.SpoofWeight == 0 {
+		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof port: %d", rule.SpoofPort))
+	}
+	if rule.SpoofPort == 0 {
+		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof port: %d", rule.SpoofPort))
+	}
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           true,
+			Opcode:             req.Opcode,
+			Authoritative:      true,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: req.RecursionAvailable,
+			AuthenticatedData:  req.AuthenticatedData,
+			CheckingDisabled:   req.CheckingDisabled,
+			Rcode:              dns.RcodeSuccess,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+		Answer: []dns.RR{
+			&dns.SRV{
+				Hdr: dns.RR_Header{
+					Name:   req.Question[0].Name,
+					Rrtype: dns.TypeSRV,
+					Class:  dns.ClassINET,
+					Ttl:    0,
+				},
+				Priority: rule.SpoofPriority,
+				Weight:   rule.SpoofPort,
+				Port:     rule.SpoofPort,
+				Target:   rule.Spoof,
+			},
+		},
+	}
 }

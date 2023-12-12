@@ -59,6 +59,8 @@ var (
 		"CDS":        dns.TypeCDS,
 		"CDNSKEY":    dns.TypeCDNSKEY,
 		"OPENPGPKEY": dns.TypeOPENPGPKEY,
+
+		"SPF": dns.TypeSPF,
 	}
 
 	QueryTypeToString = map[uint16]string{
@@ -84,6 +86,8 @@ var (
 		dns.TypeCDS:        "CDS",
 		dns.TypeCDNSKEY:    "CDNSKEY",
 		dns.TypeOPENPGPKEY: "OPENPGPKEY",
+
+		dns.TypeSPF: "SPF",
 	}
 )
 
@@ -204,6 +208,9 @@ func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 	case dns.TypeCNAME:
 		g.Log.Info(fmt.Sprintf("Spoofing CNAME record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofCNAME(rule, req)
+	case dns.TypeSOA:
+		g.Log.Info(fmt.Sprintf("Spoofing SOA record for %s", req.Question[0].Name))
+		return g.spoofSOA(rule, req)
 	case dns.TypePTR:
 		g.Log.Info(fmt.Sprintf("Spoofing PTR record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofPTR(rule, req)
@@ -216,6 +223,13 @@ func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 	case dns.TypeAAAA:
 		g.Log.Info(fmt.Sprintf("Spoofing AAAA record for %s to %s", req.Question[0].Name, rule.Spoof))
 		return g.spoofAAAA(rule, req)
+	case dns.TypeSRV:
+		g.Log.Info(fmt.Sprintf("Spoofing SRV record for %s to %s (port: %d)",
+			req.Question[0].Name,
+			rule.Spoof,
+			rule.SpoofPort,
+		))
+		return g.spoofSRV(rule, req)
 	}
 
 	g.Log.Warn(fmt.Sprintf("Unsupported DNS record type for spoofing: %s", req.Question[0].String()))
@@ -281,6 +295,20 @@ type ReplacementRule struct {
 	SourceIPs []string `json:"source_ips" yaml:"source_ips"`
 
 	Spoof string `json:"spoof" yaml:"spoof"`
+
+	// SOA
+	SpoofMName   string `json:"spoof_mname" yaml:"spoof_mname"`
+	SpoofRName   string `json:"spoof_rname" yaml:"spoof_rname"`
+	SpoofSerial  uint32 `json:"spoof_serial" yaml:"spoof_serial"`
+	SpoofRefresh uint32 `json:"spoof_refresh" yaml:"spoof_refresh"`
+	SpoofRetry   uint32 `json:"spoof_retry" yaml:"spoof_retry"`
+	SpoofExpire  uint32 `json:"spoof_expire" yaml:"spoof_expire"`
+	SpoofMinTTL  uint32 `json:"spoof_minttl" yaml:"spoof_minttl"`
+
+	// SRV
+	SpoofPriority uint16 `json:"spoof_priority" yaml:"spoof_priority"`
+	SpoofWeight   uint16 `json:"spoof_weight" yaml:"spoof_weight"`
+	SpoofPort     uint16 `json:"spoof_port" yaml:"spoof_port"`
 
 	// Compiled pattern matches
 	matchRegex *regexp.Regexp `json:"-" yaml:"-"`
