@@ -108,6 +108,60 @@ func TestYaml1(t *testing.T) {
 	} else {
 		t.Errorf("config rules should have an MX entry")
 	}
+
+	if soaRules, ok := conf.Rules["SOA"]; ok {
+		if len(soaRules) != 1 {
+			t.Errorf("config rules should have 1 SOA entry got %v", soaRules)
+		}
+
+		if soaRules[0].Priority != 1 {
+			t.Errorf("config rules should have an SOA entry with priority 1 got %d", soaRules[0].Priority)
+		}
+		if soaRules[0].SpoofMName != "ns1.example.com" {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofRName != "hostmaster.example.com" {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofSerial != 1 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofRefresh != 2 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofRetry != 3 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofExpire != 4 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofMinTTL != 5 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+	} else {
+		t.Errorf("config rules should have an SOA entry")
+	}
+
+	if srvRules, ok := conf.Rules["SRV"]; ok {
+		if len(srvRules) != 1 {
+			t.Errorf("config rules should have 1 SRV entry got %v", srvRules)
+		}
+
+		if srvRules[0].Priority != 1 {
+			t.Errorf("config rules should have an SRV entry with priority 1 got %d", srvRules[0].Priority)
+		}
+		if srvRules[0].SpoofPriority != 1 {
+			t.Errorf("config rules should have an SRV entry with spoof_priority 1 got %d", srvRules[0].SpoofPriority)
+		}
+		if srvRules[0].SpoofWeight != 2 {
+			t.Errorf("config rules should have an SRV entry with spoof_weight 1 got %d", srvRules[0].SpoofWeight)
+		}
+		if srvRules[0].SpoofPort != 3 {
+			t.Errorf("config rules should have an SRV entry with spoof_port 1 got %d", srvRules[0].SpoofPort)
+		}
+	} else {
+		t.Errorf("config rules should have an SRV entry")
+	}
 }
 
 func TestJson1(t *testing.T) {
@@ -195,5 +249,59 @@ func TestJson1(t *testing.T) {
 		}
 	} else {
 		t.Errorf("config rules should have an MX entry")
+	}
+
+	if soaRules, ok := conf.Rules["SOA"]; ok {
+		if len(soaRules) != 1 {
+			t.Errorf("config rules should have 1 SOA entry got %v", soaRules)
+		}
+
+		if soaRules[0].Priority != 1 {
+			t.Errorf("config rules should have an SOA entry with priority 1 got %d", soaRules[0].Priority)
+		}
+		if soaRules[0].SpoofMName != "ns1.example.com" {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofRName != "hostmaster.example.com" {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofSerial != 1 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofRefresh != 2 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofRetry != 3 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofExpire != 4 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+		if soaRules[0].SpoofMinTTL != 5 {
+			t.Errorf("config rules should have an SOA entry with spoof, got %s", soaRules[0].Spoof)
+		}
+	} else {
+		t.Errorf("config rules should have an SOA entry")
+	}
+
+	if srvRules, ok := conf.Rules["SRV"]; ok {
+		if len(srvRules) != 1 {
+			t.Errorf("config rules should have 1 SRV entry got %v", srvRules)
+		}
+
+		if srvRules[0].Priority != 1 {
+			t.Errorf("config rules should have an SRV entry with priority 1 got %d", srvRules[0].Priority)
+		}
+		if srvRules[0].SpoofPriority != 1 {
+			t.Errorf("config rules should have an SRV entry with spoof_priority 1 got %d", srvRules[0].SpoofPriority)
+		}
+		if srvRules[0].SpoofWeight != 2 {
+			t.Errorf("config rules should have an SRV entry with spoof_weight 1 got %d", srvRules[0].SpoofWeight)
+		}
+		if srvRules[0].SpoofPort != 3 {
+			t.Errorf("config rules should have an SRV entry with spoof_port 1 got %d", srvRules[0].SpoofPort)
+		}
+	} else {
+		t.Errorf("config rules should have an SRV entry")
 	}
 }
