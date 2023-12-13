@@ -25,6 +25,25 @@ import (
 	"github.com/miekg/dns"
 )
 
+func (g *GodNS) spoofNX(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
+	return &dns.Msg{
+		MsgHdr: dns.MsgHdr{
+			Id:                 req.Id,
+			Response:           false,
+			Opcode:             req.Opcode,
+			Authoritative:      false,
+			Truncated:          req.Truncated,
+			RecursionDesired:   req.RecursionDesired,
+			RecursionAvailable: false,
+			AuthenticatedData:  false,
+			CheckingDisabled:   false,
+			Rcode:              dns.RcodeNameError,
+		},
+		Compress: req.Compress,
+		Question: req.Question,
+	}
+}
+
 func (g *GodNS) spoofA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	if net.ParseIP(rule.Spoof).To4() == nil {
 		g.Log.Warn(fmt.Sprintf("A rule contains invalid IPv4 address: %s", rule.Spoof))

@@ -58,6 +58,7 @@ const (
 	txtRuleFlag   = "rule-txt"   // TXT rule
 	cnameRuleFlag = "rule-cname" // CNAME rule
 	ptrRuleFlag   = "rule-ptr"   // PTR rule
+	blockRuleFlag = "rule-block" // Block rule (NX)
 )
 
 func init() {
@@ -89,6 +90,7 @@ func init() {
 	rootCmd.Flags().StringSliceP(nsRuleFlag, "n", []string{}, "Replacement rule for NS records (match|spoof)")
 	rootCmd.Flags().StringSliceP(txtRuleFlag, "t", []string{}, "Replacement rule for TXT records (match|spoof)")
 	rootCmd.Flags().StringSliceP(cnameRuleFlag, "c", []string{}, "Replacement rule for CNAME records (match|spoof)")
+	rootCmd.Flags().StringSliceP(blockRuleFlag, "b", []string{}, "Block resolution of A and AAAA records for a domain (match)")
 
 	rootCmd.AddCommand(completionCmd)
 	rootCmd.AddCommand(licenseCmd)
@@ -198,6 +200,12 @@ var rootCmd = &cobra.Command{
 			config.Rules["AAAA"] = parseRulesFlag(cmd, qRuleFlag)
 		}
 
+		if cmd.Flags().Changed(blockRuleFlag) {
+			blocks := parseBlockRulesFlag(cmd, blockRuleFlag)
+			config.Rules["A"] = append(config.Rules["A"], blocks...)
+			config.Rules["AAAA"] = append(config.Rules["AAAA"], blocks...)
+		}
+
 		// Parse log flags
 		logger := parseLogFlags(cmd)
 
@@ -227,6 +235,20 @@ func parseRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
 			IsRegExp: false,
 			Match:    segments[0],
 			Spoof:    segments[1],
+		})
+	}
+	return parsedRules
+}
+
+func parseBlockRulesFlag(cmd *cobra.Command, flag string) []*godns.ReplacementRule {
+	rules, _ := cmd.Flags().GetStringSlice(flag)
+	parsedRules := []*godns.ReplacementRule{}
+	for _, rawRule := range rules {
+		parsedRules = append(parsedRules, &godns.ReplacementRule{
+			Priority: 0,
+			IsRegExp: false,
+			Match:    rawRule,
+			Block:    true,
 		})
 	}
 	return parsedRules

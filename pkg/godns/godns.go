@@ -198,6 +198,11 @@ func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 		}
 	}
 
+	if rule.Block {
+		g.Log.Info(fmt.Sprintf("Blocking response (NX) for %s", req.Question[0].Name))
+		return g.spoofNX(rule, req)
+	}
+
 	switch req.Question[0].Qtype {
 	case dns.TypeA:
 		g.Log.Info(fmt.Sprintf("Spoofing A record for %s to %s", req.Question[0].Name, rule.Spoof))
@@ -295,6 +300,8 @@ type ReplacementRule struct {
 	SourceIPs []string `json:"source_ips" yaml:"source_ips"`
 
 	Spoof string `json:"spoof" yaml:"spoof"`
+
+	Block bool `json:"block" yaml:"block"`
 
 	// SOA
 	SpoofMName   string `json:"spoof_mname" yaml:"spoof_mname"`
