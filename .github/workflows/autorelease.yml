@@ -50,7 +50,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-builds
           path: ./godns_*
@@ -85,7 +85,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bsd-builds
           path: ./godns_*
@@ -115,7 +115,7 @@ jobs:
         run: CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_ios-arm64 .
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ios-build
           path: ./godns_*
@@ -145,7 +145,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_android-arm64 .
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-build
           path: ./godns_*
@@ -180,7 +180,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: other-builds
           path: ./godns_*
@@ -215,7 +215,7 @@ jobs:
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe .
 
       - name: Upload
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-builds
           path: ./godns_*
@@ -247,7 +247,7 @@ jobs:
         run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
 
       - run: mkdir -p ./builds
-      - uses: actions/download-artifact@v4.1.7
+      - uses: actions/download-artifact@v4
         with:
           path: ./builds
 
