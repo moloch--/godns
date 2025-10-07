@@ -6,6 +6,16 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_VERSION: ${{ github.ref_name }}
+
 jobs:
   linux-builds:
     name: Linux Builds
@@ -16,44 +26,45 @@ jobs:
       matrix:
         goos: [linux]
         goarch:
-          [
-            386,
-            amd64,
-            arm64,
-            mips,
-            mips64,
-            mips64le,
-            mipsle,
-            ppc64,
-            ppc64le,
-            riscv64,
-            s390x,
-          ]
+          - 386
+          - amd64
+          - arm64
+          - mips
+          - mips64
+          - mips64le
+          - mipsle
+          - ppc64
+          - ppc64le
+          - riscv64
+          - s390x
 
     steps:
-      - name: Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
 
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        with:
+          fetch-depth: 0
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/moloch--/godns/cmd.Version=${RELEASE_VERSION}" \
+            -o dist/godns_${{ matrix.goos }}-${{ matrix.goarch }} \
+            .
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: linux-builds
-          path: ./godns_*
+          name: build-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+          retention-days: 5
 
   bsd-builds:
     name: BSD Builds
@@ -66,29 +77,32 @@ jobs:
         goarch: [amd64, arm64]
 
     steps:
-      - name: Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
 
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        with:
+          fetch-depth: 0
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/moloch--/godns/cmd.Version=${RELEASE_VERSION}" \
+            -o dist/godns_${{ matrix.goos }}-${{ matrix.goarch }} \
+            .
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bsd-builds
-          path: ./godns_*
+          name: build-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+          retention-days: 5
 
   ios-build:
     name: iOS Build
@@ -96,29 +110,32 @@ jobs:
     runs-on: macos-latest-xlarge
     timeout-minutes: 10
     steps:
-      - name: Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
 
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        with:
+          fetch-depth: 0
 
       - name: Go Build
-        run: CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_ios-arm64 .
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/moloch--/godns/cmd.Version=${RELEASE_VERSION}" \
+            -o dist/godns_ios-arm64 \
+            .
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-build
-          path: ./godns_*
+          name: build-ios-arm64
+          path: dist/godns_ios-arm64
+          if-no-files-found: error
+          retention-days: 5
 
   android-build:
     name: Android Build
@@ -126,29 +143,32 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
 
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        with:
+          fetch-depth: 0
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_android-arm64 .
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/moloch--/godns/cmd.Version=${RELEASE_VERSION}" \
+            -o dist/godns_android-arm64 \
+            .
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-build
-          path: ./godns_*
+          name: build-android-arm64
+          path: dist/godns_android-arm64
+          if-no-files-found: error
+          retention-days: 5
 
   other-builds:
     name: Other Builds
@@ -161,29 +181,32 @@ jobs:
         goarch: [amd64]
 
     steps:
-      - name: Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
 
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        with:
+          fetch-depth: 0
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/moloch--/godns/cmd.Version=${RELEASE_VERSION}" \
+            -o dist/godns_${{ matrix.goos }}-${{ matrix.goarch }} \
+            .
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: other-builds
-          path: ./godns_*
+          name: build-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+          retention-days: 5
 
   windows-builds:
     name: Windows Builds
@@ -196,74 +219,60 @@ jobs:
         goarch: [386, amd64, arm64]
 
     steps:
-      - name: Go 1.24
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "^1.24"
+          go-version-file: go.mod
 
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
+        with:
+          fetch-depth: 0
 
       - name: Go Build
-        run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w -X github.com/moloch--/godns/cmd.Version=${{ steps.tag-name.outputs.version }}" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe .
+        run: |
+          mkdir -p dist
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+            -trimpath \
+            -ldflags "-s -w -X github.com/moloch--/godns/cmd.Version=${RELEASE_VERSION}" \
+            -o dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe \
+            .
 
-      - name: Upload
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: windows-builds
-          path: ./godns_*
+          name: build-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe
+          if-no-files-found: error
+          retention-days: 5
 
   tagged-release:
     needs:
-      [
-        linux-builds,
-        bsd-builds,
-        ios-build,
-        android-build,
-        other-builds,
-        windows-builds,
-      ]
-
-    name: "Tagged Release"
+      - linux-builds
+      - bsd-builds
+      - ios-build
+      - android-build
+      - other-builds
+      - windows-builds
+    name: Tagged Release
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Check Out Code
         uses: actions/checkout@v4
-
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
-
-      - name: Get Version
-        id: tag-name
-        run: echo "version=$(git describe --tags)" >> $GITHUB_OUTPUT
-
-      - run: mkdir -p ./builds
-      - uses: actions/download-artifact@v4
         with:
-          path: ./builds
+          fetch-depth: 0
 
-      - name: Move Builds
-        run: |
-          mkdir ./release
-          mv ./builds/linux-builds/* ./release/
-          mv ./builds/bsd-builds/* ./release/
-          mv ./builds/ios-build/* ./release/
-          mv ./builds/android-build/* ./release/
-          mv ./builds/other-builds/* ./release/
-          mv ./builds/windows-builds/* ./release/
-
-      - name: "Publish Release"
-        uses: "bishopfox/action-gh-release@v1"
+      - name: Collect Artifacts
+        uses: actions/download-artifact@v4
         with:
-          tag_name: ${{ steps.tag-name.outputs.version }}
-          files: |
-            ./release/*
+          path: release
+          pattern: build-*
+          merge-multiple: true
+
+      - name: Publish Release
+        uses: bishopfox/action-gh-release@v1
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          files: release/*
