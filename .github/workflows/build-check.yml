@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Go 1.24
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "^1.24"
 
@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: Go 1.24
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "^1.24"
 
@@ -81,7 +81,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Go 1.24
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "^1.24"
 
@@ -100,7 +100,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Go 1.24
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "^1.24"
 
@@ -124,7 +124,7 @@ jobs:
 
     steps:
       - name: Go 1.24
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "^1.24"
 
@@ -148,7 +148,7 @@ jobs:
 
     steps:
       - name: Go 1.24
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: "^1.24"
 
