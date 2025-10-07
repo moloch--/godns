@@ -186,10 +186,10 @@ func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 	if rule, ok = g.matchReplacement(req); !ok {
 		return nil
 	}
-	if rule.SourceIPs != nil && len(rule.SourceIPs) > 0 {
+	if len(rule.SourceIPs) > 0 {
 		// Check if the source IP is in the list of allowed IPs
 		// If it's not, then we don't replace the response
-		if !slices.Contains[[]string](rule.SourceIPs, remoteAddr) {
+		if !slices.Contains(rule.SourceIPs, remoteAddr) {
 			g.Log.Info(fmt.Sprintf("Skipping spoofed DNS response for %s, source IP %s not in allowed list",
 				req.Question[0].Name,
 				remoteAddr,

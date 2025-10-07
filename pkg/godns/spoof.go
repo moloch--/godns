@@ -300,10 +300,10 @@ func (g *GodNS) spoofAAAA(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 
 func (g *GodNS) spoofSRV(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 	if rule.SpoofPriority == 0 {
-		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof port: %d", rule.SpoofPort))
+		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof priority: %d", rule.SpoofPriority))
 	}
 	if rule.SpoofWeight == 0 {
-		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof port: %d", rule.SpoofPort))
+		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof weight: %d", rule.SpoofWeight))
 	}
 	if rule.SpoofPort == 0 {
 		g.Log.Warn(fmt.Sprintf("SRV rule contains invalid spoof port: %d", rule.SpoofPort))
@@ -332,7 +332,7 @@ func (g *GodNS) spoofSRV(rule *ReplacementRule, req *dns.Msg) *dns.Msg {
 					Ttl:    0,
 				},
 				Priority: rule.SpoofPriority,
-				Weight:   rule.SpoofPort,
+				Weight:   rule.SpoofWeight,
 				Port:     rule.SpoofPort,
 				Target:   rule.Spoof,
 			},

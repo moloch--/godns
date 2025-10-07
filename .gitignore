@@ -4,3 +4,6 @@
 /godns_*
 /builds
 /release
+
+.gocache/
+.gomodcache/
