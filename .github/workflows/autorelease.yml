@@ -59,7 +59,7 @@ jobs:
             .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}
@@ -97,7 +97,7 @@ jobs:
             .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}
@@ -130,7 +130,7 @@ jobs:
             .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-ios-arm64
           path: dist/godns_ios-arm64
@@ -163,7 +163,7 @@ jobs:
             .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-android-arm64
           path: dist/godns_android-arm64
@@ -201,7 +201,7 @@ jobs:
             .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}
@@ -239,7 +239,7 @@ jobs:
             .
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe
