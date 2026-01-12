@@ -17,7 +17,7 @@ github.com/lmittmann/tint
 # github.com/mattn/go-isatty v0.0.20
 ## explicit; go 1.15
 github.com/mattn/go-isatty
-# github.com/miekg/dns v1.1.69
+# github.com/miekg/dns v1.1.70
 ## explicit; go 1.24.0
 github.com/miekg/dns
 # github.com/spf13/cobra v1.10.2
