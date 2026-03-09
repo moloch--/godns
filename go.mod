@@ -1,8 +1,6 @@
 module github.com/moloch--/godns
 
-go 1.24.0
-
-toolchain go1.24.3
+go 1.25.0
 
 require (
 	github.com/gobwas/glob v0.2.3
@@ -10,7 +8,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/miekg/dns v1.1.72
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/sys v0.39.0
+	golang.org/x/sys v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
