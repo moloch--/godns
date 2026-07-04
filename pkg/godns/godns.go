@@ -23,6 +23,7 @@ import (
 	"io"
 	"log/slog"
 	insecureRand "math/rand"
+	"net"
 	"regexp"
 	"slices"
 	"sort"
@@ -189,7 +190,11 @@ func (g *GodNS) evalReplacement(req *dns.Msg, remoteAddr string) *dns.Msg {
 	if len(rule.SourceIPs) > 0 {
 		// Check if the source IP is in the list of allowed IPs
 		// If it's not, then we don't replace the response
-		if !slices.Contains(rule.SourceIPs, remoteAddr) {
+		sourceIP := remoteAddr
+		if host, _, err := net.SplitHostPort(remoteAddr); err == nil {
+			sourceIP = host
+		}
+		if !slices.Contains(rule.SourceIPs, sourceIP) && !slices.Contains(rule.SourceIPs, remoteAddr) {
 			g.Log.Info(fmt.Sprintf("Skipping spoofed DNS response for %s, source IP %s not in allowed list",
 				req.Question[0].Name,
 				remoteAddr,
@@ -262,13 +267,30 @@ func (g *GodNS) matchReplacement(req *dns.Msg) (*ReplacementRule, bool) {
 					continue
 				}
 				qName := strings.ToLower(strings.TrimSuffix(req.Question[0].Name, "."))
-				if rule.matchGlob.Match(qName) {
+				matched, panicValue := safeGlobMatch(rule.matchGlob, qName)
+				if panicValue != nil {
+					if g.Log != nil {
+						g.Log.Warn(fmt.Sprintf("Skipping rule %q after glob match panic: %v", rule.Match, panicValue))
+					}
+					continue
+				}
+				if matched {
 					return rule, true
 				}
 			}
 		}
 	}
 	return nil, false
+}
+
+func safeGlobMatch(match glob.Glob, value string) (matched bool, panicValue any) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			matched = false
+			panicValue = recovered
+		}
+	}()
+	return match.Match(value), nil
 }
 
 type GodNSConfig struct {

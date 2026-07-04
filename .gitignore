@@ -4,6 +4,8 @@
 /godns_*
 /builds
 /release
+/coverage.out
+/coverage.html
 
 .gocache/
 .gomodcache/

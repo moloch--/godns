@@ -90,6 +90,7 @@ func init() {
 	rootCmd.Flags().StringSliceP(nsRuleFlag, "n", []string{}, "Replacement rule for NS records (match|spoof)")
 	rootCmd.Flags().StringSliceP(txtRuleFlag, "t", []string{}, "Replacement rule for TXT records (match|spoof)")
 	rootCmd.Flags().StringSliceP(cnameRuleFlag, "c", []string{}, "Replacement rule for CNAME records (match|spoof)")
+	rootCmd.Flags().StringSliceP(ptrRuleFlag, "r", []string{}, "Replacement rule for PTR records (match|spoof)")
 	rootCmd.Flags().StringSliceP(blockRuleFlag, "b", []string{}, "Block resolution of A and AAAA records for a domain (match)")
 
 	rootCmd.AddCommand(completionCmd)

@@ -1,10 +1,12 @@
 package godns
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -364,6 +366,9 @@ func startTestDNSServer(t *testing.T, handler dns.HandlerFunc) (ip string, port 
 
 	conn, err := net.ListenPacket("udp", "127.0.0.1:0")
 	if err != nil {
+		if errors.Is(err, os.ErrPermission) {
+			t.Skipf("sandbox does not allow binding a local UDP listener: %v", err)
+		}
 		t.Fatalf("failed to start UDP listener: %v", err)
 	}
 
