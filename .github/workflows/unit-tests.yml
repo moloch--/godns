@@ -4,31 +4,44 @@ on:
   push:
     paths:
       - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - "**.go"
+      - "vendor/**"
+      - ".github/workflows/unit-tests.yml"
     branches: [main]
 
   pull_request:
     paths:
       - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - "**.go"
+      - "vendor/**"
+      - ".github/workflows/unit-tests.yml"
     branches: [main]
+
+env:
+  FUZZTIME: 10s
 
 jobs:
   run-unit-tests:
-    name: Run Tests
+    name: Run Unit and Fuzz Tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Unit Tests
-        run: go test ./...
+        run: make test
+
+      - name: Go Fuzz Tests
+        run: make fuzz

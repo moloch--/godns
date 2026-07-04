@@ -4,18 +4,51 @@ on:
   push:
     paths:
       - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - "**.go"
+      - "vendor/**"
+      - ".github/workflows/build-check.yml"
     branches: [main]
 
   pull_request:
     paths:
       - "go.mod"
+      - "go.sum"
+      - "Makefile"
       - "**.go"
+      - "vendor/**"
+      - ".github/workflows/build-check.yml"
     branches: [main]
 
+env:
+  FUZZTIME: 10s
+
 jobs:
+  test-suite:
+    name: Unit and Fuzz Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check Out Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Go Unit Tests
+        run: make test
+
+      - name: Go Fuzz Tests
+        run: make fuzz
+
   linux-builds:
     name: Linux Builds
+    needs: test-suite
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -37,22 +70,22 @@ jobs:
           ]
 
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Build
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
   bsd-builds:
     name: BSD Builds
+    needs: test-suite
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -61,60 +94,60 @@ jobs:
         goarch: [amd64, arm64]
 
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Build
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
   ios-build:
     name: iOS Build
+    needs: test-suite
     runs-on: macos-latest-xlarge
     timeout-minutes: 10
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Build
         run: CGO_ENABLED=1 GOOS=ios GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./godns_ios-arm64 .
 
   androiod-build:
     name: Android Build
+    needs: test-suite
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Build
         run: CGO_ENABLED=0 GOOS=android GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ./godns_android-arm64 .
 
   other-builds:
     name: Other Builds
+    needs: test-suite
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -123,22 +156,22 @@ jobs:
         goarch: [amd64]
 
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Build
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }} .
 
   windows-builds:
     name: Windows Builds
+    needs: test-suite
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -147,16 +180,15 @@ jobs:
         goarch: [386, amd64, arm64]
 
     steps:
-      - name: Go 1.24
-        uses: actions/setup-go@v6
-        with:
-          go-version: "^1.24"
-
       - name: Check Out Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Git Fetch Tags
-        run: git fetch --prune --unshallow --tags -f
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
 
       - name: Go Build
         run: CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -trimpath -ldflags="-s -w" -o ./godns_${{ matrix.goos }}-${{ matrix.goarch }}.exe .
