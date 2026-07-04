@@ -1,0 +1,49 @@
+name: golangci-lint
+
+on:
+  push:
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - ".golangci.yml"
+      - "**.go"
+      - "vendor/**"
+      - ".github/workflows/golangci-lint.yml"
+    branches: [main]
+
+  pull_request:
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "Makefile"
+      - ".golangci.yml"
+      - "**.go"
+      - "vendor/**"
+      - ".github/workflows/golangci-lint.yml"
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    name: Run golangci-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check Out Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12
+          args: ./...

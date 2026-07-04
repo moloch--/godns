@@ -128,7 +128,9 @@ func (g *GodNS) HandleDNSRequest(writer dns.ResponseWriter, req *dns.Msg) {
 		msg := &dns.Msg{}
 		msg.SetReply(req)
 		msg.SetRcode(req, dns.RcodeFormatError)
-		writer.WriteMsg(msg)
+		if err := writer.WriteMsg(msg); err != nil {
+			g.Log.Error(fmt.Sprintf("Error writing response: %s", err.Error()))
+		}
 		return
 	}
 

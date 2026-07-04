@@ -1,10 +1,14 @@
-.PHONY: test coverage coverage-html fuzz
+.PHONY: test lint coverage coverage-html fuzz
 
 COVERPROFILE ?= coverage.out
 FUZZTIME ?= 10s
+GOLANGCI_LINT ?= golangci-lint
 
 test:
 	go test ./...
+
+lint:
+	$(GOLANGCI_LINT) run ./...
 
 coverage:
 	go test ./... -coverprofile=$(COVERPROFILE)

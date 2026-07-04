@@ -2,7 +2,7 @@
 
 A fast and configurable attacker-in-the-middle DNS proxy for penetration testers, reverse engineers, and malware analysts inspired by [DNSChef](https://github.com/iphelix/dnschef). It allows the selective replacement of specific DNS records for arbitrary domains with custom values, and can be used to direct traffic to a different host. GodNS can spoof `A`, `AAAA`, `CNAME`, `PTR`, `MX`, `NS`, `SRV`, `SOA`, and `TXT` records. It can also be used to block DNS requests for specific domains.
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/moloch--/godns)](https://goreportcard.com/report/github.com/moloch--/godns)
+[![golangci-lint](https://github.com/moloch--/godns/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/golangci-lint.yml)
 [![Build Check](https://github.com/moloch--/godns/actions/workflows/build-check.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/build-check.yml)
 [![Unit Tests](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/unit-tests.yml)
 [![Release](https://github.com/moloch--/godns/actions/workflows/autorelease.yml/badge.svg)](https://github.com/moloch--/godns/actions/workflows/autorelease.yml)
