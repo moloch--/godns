@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/gobwas/glob v0.2.3
-	github.com/lmittmann/tint v1.1.3
+	github.com/lmittmann/tint v1.2.0
 	github.com/mattn/go-isatty v0.0.22
 	github.com/miekg/dns v1.1.72
 	github.com/spf13/cobra v1.10.2
