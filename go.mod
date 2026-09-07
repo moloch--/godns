@@ -3,7 +3,7 @@ module github.com/moloch--/godns
 go 1.26.4
 
 require (
-	github.com/gobwas/glob v0.2.3
+	github.com/gobwas/glob v1.0.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/mattn/go-isatty v0.0.22
 	github.com/miekg/dns v1.1.73
